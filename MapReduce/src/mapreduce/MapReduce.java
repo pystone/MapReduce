@@ -115,4 +115,12 @@ public class MapReduce {
 				e.printStackTrace();
 			}
 		}
+		private static void testMkdir() {
+			File aa = new File("/Users/PY/Desktop/pypy");
+			if (aa.mkdirs() == true) {
+				System.out.println("mkdir successfully!");
+			} else {
+				System.out.println("failed to mkdir!");
+			}
+		}
 }

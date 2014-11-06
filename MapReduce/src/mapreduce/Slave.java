@@ -6,6 +6,7 @@ package mapreduce;
 import java.io.IOException;
 import java.net.Socket;
 
+import jobcontrol.JobInfo;
 import network.MsgHandler;
 
 /**
@@ -37,10 +38,10 @@ public class Slave {
 	}
 	
 	public void start() {
-		while (true) {
-			
-		}
+		
 	}
 	
-	
+	public void newJob(JobInfo job) {
+		System.out.println("get a new job: " + job._jobId + " " + job._inFilePath);
+	}
 }

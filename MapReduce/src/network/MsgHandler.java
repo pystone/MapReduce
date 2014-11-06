@@ -6,6 +6,7 @@ package network;
 import java.io.IOException;
 import java.net.Socket;
 
+import jobcontrol.JobInfo;
 import mapreduce.Slave;
 
 /**
@@ -38,6 +39,8 @@ public class MsgHandler extends Thread {
 					System.out.println("Sid got: " + ((Integer)(msg._content)).intValue());
 					break;
 					
+				case NEW_JOB:
+					Slave.sharedSlave().newJob((JobInfo)msg._content);
 				/* slave -> master */
 				}
 			} catch (ClassNotFoundException | IOException e) {
