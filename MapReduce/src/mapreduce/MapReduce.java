@@ -12,6 +12,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -38,8 +40,22 @@ public class MapReduce {
 			System.out.println("Please provide config file name!");
 			System.exit(-1);
 		}
-		start(args[0], args[1]);
+//		start(args[0], args[1]);
 		
+		Class<?> jobClass;
+		try {
+			jobClass = Class.forName("example.WordCounter");
+			Method getConfMethod = jobClass.getMethod("haha", null);
+			getConfMethod.invoke(null, null);
+		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		PairContainer<String, Integer> cont = new PairContainer<String, Integer>();
+//		cont.key = new String();
+//		cont.val = 1;
+		cont.getType();
 		
 	}
 	

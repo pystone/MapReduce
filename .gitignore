@@ -1,3 +1,4 @@
 MapReduce/ResultFiles
+*.class
 MapReduce/IntermediateFiles
 MapReduce/ChunkInputFiles

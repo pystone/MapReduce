@@ -65,7 +65,7 @@ public class Master {
 	public void inputHandler(String[] cmd) {
 		switch (cmd[0]) {
 		case "new":
-			newTask(cmd[1], cmd[2], cmd[3]);
+			newTask(cmd[1], cmd[2], cmd[3], cmd[4]);
 			break;
 		}
 	}
@@ -85,7 +85,7 @@ public class Master {
 		
 	}
 	
-	public void newTask(String inputFile, String mapperPath, String reducerPath) {
+	public void newTask(String inputFile, String mapperPath, String reducerPath, String taskName) {
 		int taskId = _taskId.incrementAndGet();
 		Task task = new Task(taskId);
 		task._mapperPath = mapperPath;
@@ -105,7 +105,7 @@ public class Master {
 			ArrayList<String> files = HDFileSplit.split(inputFile, GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
 			int jobid = 0;
 			for (String fn: files) {
-				JobInfo job = new JobInfo(++jobid);
+				JobInfo job = new JobInfo(++jobid, taskName);
 				job._taskId = taskId;
 				job._sid = getFreeSlave();
 				job._inFilePath = fn;

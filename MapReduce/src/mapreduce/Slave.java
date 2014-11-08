@@ -5,6 +5,8 @@ package mapreduce;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import jobcontrol.JobInfo;
 import network.MsgHandler;
@@ -42,6 +44,31 @@ public class Slave {
 	}
 	
 	public void newJob(JobInfo job) {
-		System.out.println("get a new job: " + job._jobId + " " + job._inFilePath);
+		System.out.println("get a new job: " + job._jobId + " " + job._taskName + " " + job._type);
+		if (job._type == JobInfo.JobType.MAP) {
+			map(job);
+		} else if (job._type == JobInfo.JobType.REDUCE) {
+			reduce(job);
+		} else {
+			System.out.println("WARNING: Receiving a NONE job!");
+		}
+	}
+	
+	public void map(JobInfo job) {
+		PairContainer<String, String> interPairs = new PairContainer<String, String>();
+		MRBase ins = job.getMRInstance();
+		String inFileName = job.getInFileName();
+		String content = job.getFileContent();
+		try {
+			ins.map(inFileName, content, interPairs);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		PairContainer<String, Iterator<String>> mergedInterPairs = interPairs.mergeSameKey();
+		job.saveInterFile(mergedInterPairs);
+	}
+	
+	public void reduce(JobInfo job) {
+		
 	}
 }
