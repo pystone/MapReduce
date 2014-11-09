@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map.Entry;
 
 import jobcontrol.JobInfo;
 import network.MsgHandler;
@@ -59,7 +60,7 @@ public class Slave {
 	}
 	
 	public void map(JobInfo job) {
-		PairContainer<String, String> interPairs = new PairContainer<String, String>();
+		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 		
 		String inFileName = job.getInFileName();
@@ -72,22 +73,22 @@ public class Slave {
 			e1.printStackTrace();
 		}
 		
-		PairContainer<String, Iterator<String>> mergedInterPairs = interPairs.mergeSameKey();
+//		PairContainer<String, Iterator<String>> mergedInterPairs = interPairs.mergeSameKey();
 		// TODO: change into KPFile
-		job.saveInterFile(mergedInterPairs);
+		job.saveInterFile(interPairs);
 		// TODO: send complete msg back to master
 	}
 	
 	public void reduce(JobInfo job) {
-		PairContainer<String, String> resultPairs = new PairContainer<String, String>();
+		PairContainer resultPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
-		PairContainer<String, Iterator<String>> interPairs = job.getInterPairs();
-		Iterator<Pair<String, Iterator<String>>> iter = interPairs.getInitialIterator();
+		PairContainer interPairs = job.getInterPairs();
+		Iterator<Entry<String, ArrayList<String>>> iter = interPairs.getInitialIterator();
 		
 		for (; iter.hasNext(); ) {
-			Pair<String, Iterator<String>> cur = iter.next();
+			Entry<String, ArrayList<String>> cur = iter.next();
 			try {
-				ins.reduce(cur.getFirst(), cur.getSecond(), resultPairs);
+				ins.reduce(cur.getKey(), cur.getValue(), resultPairs);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

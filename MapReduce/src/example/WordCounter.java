@@ -1,11 +1,11 @@
 package example;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
+
 import mapreduce.MRBase;
-import mapreduce.Mapper;
 import mapreduce.PairContainer;
-import mapreduce.Reducer;
 
 public class WordCounter extends MRBase {
 //	public class Map implements Mapper<String, String, String, String> {
@@ -43,20 +43,28 @@ public class WordCounter extends MRBase {
 //		
 //	}
 	@Override
-	public void reduce(String key, Iterator<String> values,
-			PairContainer<String, String> output) throws Exception {
+	public void reduce(String key, ArrayList<String> values,
+			PairContainer output) {
 		Integer sum = 0;
-		while (values.hasNext()) {
-			sum += Integer.parseInt(values.next());
+		Iterator<String> itor = values.iterator();
+		
+		while (itor.hasNext()) {
+			sum += Integer.parseInt(itor.next());
 		}
 		output.emit(key, sum.toString());
 		
 	}
 	@Override
 	public void map(String key, String value,
-			PairContainer<String, String> output) throws Exception {
+			PairContainer output) {
 		// TODO: for every word
 		output.emit(key, "1");
+		
+	}
+	@Override
+	public void reduce(String key, String values, PairContainer output)
+			throws Exception {
+		// TODO Auto-generated method stub
 		
 	}
 }

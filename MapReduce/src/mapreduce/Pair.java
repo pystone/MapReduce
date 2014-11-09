@@ -1,9 +1,11 @@
+package mapreduce;
 /**
  * 
  */
-package mapreduce;
 
-import java.util.Iterator;
+
+import java.io.Serializable;
+
 
 
 /**
@@ -11,14 +13,14 @@ import java.util.Iterator;
  * @see http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
  *
  */
-public class Pair<A, B> {
-    private A first;
-    private B second;
-
-    public Pair(A first, B second) {
+public class Pair implements Comparable, Serializable {	
+    private String first;
+    private String second;
+    
+    public Pair(String key, String val) {
     	super();
-    	this.first = first;
-    	this.second = second;
+    	this.first = key;
+    	this.second = val;
     }
 
     public int hashCode() {
@@ -48,20 +50,25 @@ public class Pair<A, B> {
            return "(" + first + ", " + second + ")"; 
     }
 
-    public A getFirst() {
+    public String getFirst() {
     	return first;
     }
 
-    public void setFirst(A first) {
+    public void setFirst(String first) {
     	this.first = first;
     }
 
-    public B getSecond() {
+    public String getSecond() {
     	return second;
     }
 
-    public void setSecond(B second) {
+    public void setSecond(String second) {
     	this.second = second;
     }
 
+	@Override
+	public int compareTo(Object o) {
+		Pair target = (Pair)o;
+        return getFirst().compareTo(target.getFirst());
+	}
 }
