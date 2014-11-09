@@ -12,10 +12,11 @@ import java.util.Iterator;
  *
  */
 public class PairContainer<KeyT, ValT> implements Serializable {
-	KeyT key;
-	ValT val;
+	// TODO: 
 	
-	ArrayList<Class> types = new ArrayList<Class>();
+	public void emit(Pair<KeyT, ValT> pair) {
+		
+	}
 	
 	public void emit(KeyT key, ValT val) {
 		// TODO
@@ -26,16 +27,8 @@ public class PairContainer<KeyT, ValT> implements Serializable {
 		return null;
 	}
 	
-	public void getType() {
-		
-		types.add((Class)((KeyT)(new Object()).getClass()));
-		types.add((Class)((ValT)(new Object()).getClass()));
-		
-		System.out.println(((KeyT)types.get(0)).getClass());
-		System.out.println(((ValT)types.get(1)).getClass());
-		
-//		System.out.println(key.getClass());
-		
-//		System.out.println(val.getClass().getName());
+	public Iterator<Pair<String, Iterator<String>>> getInitialIterator() {
+		// TODO
+		return null;
 	}
 }

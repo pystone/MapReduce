@@ -55,6 +55,7 @@ public class WordCounter extends MRBase {
 	@Override
 	public void map(String key, String value,
 			PairContainer<String, String> output) throws Exception {
+		// TODO: for every word
 		output.emit(key, "1");
 		
 	}

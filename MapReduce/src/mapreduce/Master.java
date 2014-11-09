@@ -3,7 +3,7 @@
  */
 package mapreduce;
 
-import hdfs.HDFileSplit;
+import hdfs.KPFileSplit;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -102,17 +102,12 @@ public class Master {
 		(new File(resultDir)).mkdirs();
 		
 		try {
-			ArrayList<String> files = HDFileSplit.split(inputFile, GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
+			ArrayList<String> files = KPFileSplit.split(inputFile, GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
 			int jobid = 0;
 			for (String fn: files) {
 				JobInfo job = new JobInfo(++jobid, taskName);
 				job._taskId = taskId;
 				job._sid = getFreeSlave();
-				job._inFilePath = fn;
-				job._outFileDir = resultDir;
-				job._interFileDir = interDir;
-				job._mapperPath = mapperPath;
-				job._reducerPath = reducerPath;
 				job._type = JobInfo.JobType.MAP;
 				
 				task._jobs.put(jobid, job);

@@ -3,7 +3,7 @@
  */
 package mapreduce;
 
-import hdfs.HDFileSplit;
+import hdfs.KPFileSplit;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -42,20 +42,19 @@ public class MapReduce {
 		}
 //		start(args[0], args[1]);
 		
-		Class<?> jobClass;
+		File a = new File("words.txt");
 		try {
-			jobClass = Class.forName("example.WordCounter");
-			Method getConfMethod = jobClass.getMethod("haha", null);
-			getConfMethod.invoke(null, null);
-		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			Scanner s1 = new Scanner(a);
+			System.out.println(s1.nextLine());
+			System.out.println(s1.nextLine());
+			System.out.println(s1.nextLine());
+			Scanner s2 = new Scanner(a);
+			System.out.println(s2.nextLine());
+		} catch (FileNotFoundException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
 		
-		PairContainer<String, Integer> cont = new PairContainer<String, Integer>();
-//		cont.key = new String();
-//		cont.val = 1;
-		cont.getType();
 		
 	}
 	
@@ -123,7 +122,7 @@ public class MapReduce {
 			System.out.println(dir);
 			System.out.println(fileName);
 			try {
-				ArrayList<String> files = HDFileSplit.split(file.getAbsolutePath(), 20, dir, fileName);
+				ArrayList<String> files = KPFileSplit.split(file.getAbsolutePath(), 20, dir, fileName);
 				for (String fn: files) {
 					System.out.println(fn);
 				}

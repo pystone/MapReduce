@@ -9,14 +9,15 @@ package mapreduce;
  */
 public class GlobalInfo {
 	
-	int FileChunkSizeMB = 10;
-	int FileChunkSizeB = 27;
-	int MasterPort = 7888;
-	int SlavePort = 8999;
-	String MasterHost = "ymac";
-	String IntermediateDirName = "IntermediateFiles";
-	String ChunkDirName = "ChunkInputFiles";
-	String ResultDirName = "ResultFiles";
+	public int FileChunkSizeMB = 10;
+	public int FileChunkSizeB = 27;
+	public int MasterPort = 7888;
+	public int SlavePort = 8999;
+	public String MasterHost = "ymac";
+	public String IntermediateDirName = "IntermediateFiles";
+	public String ChunkDirName = "ChunkInputFiles";
+	public String ResultDirName = "ResultFiles";
+	public String SlaveRootDir = "/tmp/mapreduce/";
 	
 	
 	public static GlobalInfo _sharedInfo = null;

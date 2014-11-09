@@ -3,7 +3,11 @@
  */
 package jobcontrol;
 
+import hdfs.KPFSException;
+import hdfs.KPFile;
+
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -13,6 +17,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import mapreduce.GlobalInfo;
 import mapreduce.MRBase;
 import mapreduce.PairContainer;
 
@@ -32,13 +37,9 @@ public class JobInfo implements Serializable {
 	public int _taskId = 0;
 	public int _sid = 0;
 	public JobType _type = JobInfo.JobType.NONE;
-	public String _inFilePath = "";
-	public String _interFileDir = "";
-	public String _outFileDir = "";
-	public String _mapperPath = "";
-	public String _reducerPath = "";
 	public String _mrPath = "";
 	public String _taskName = "";
+	public String _dir = "";
 	
 	public JobInfo(int jobId, String taskName) {
 		_jobId = jobId;
@@ -72,24 +73,44 @@ public class JobInfo implements Serializable {
 		
 	}
 	
-	public String getInFileName() {
-		// TODO
-		return "";
+	public String getInputFileName() {
+		if (_type == JobInfo.JobType.MAP) {
+			return getInFileName();
+		} else if (_type == JobInfo.JobType.REDUCE) {
+			return getInterFileName();
+		}
+		return null;
 	}
 	
-	public String getFileContent() {
-		// TODO
-		return "";
+	public String getInFileName() {
+		return GlobalInfo.sharedInfo().SlaveRootDir + "/" + _taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/" + _taskName + "." + _jobId;
 	}
 	
 	public String getInterFileName() {
-		// TODO
-		return "";
+		return GlobalInfo.sharedInfo().SlaveRootDir + "/" + _taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName + "/" + _taskName + "." + _jobId;
 	}
 	
 	public String getResultFileName() {
+		return GlobalInfo.sharedInfo().SlaveRootDir + "/" + _taskName + "/" + GlobalInfo.sharedInfo().ResultDirName + "/" + _taskName + "." + _jobId;
+	}
+	
+	public PairContainer<String, Iterator<String>> getInterPairs() {
+		KPFile file = new KPFile(true);
+		PairContainer<String, Iterator<String>> pairs = new PairContainer<String, Iterator<String>>();
+		
+		try {
+			file.open(getInterFileName());
+			
+			while (file.hasNextLine()) {
+				String line = file.nextLine();
+				
+			}
+		} catch (FileNotFoundException | KPFSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		// TODO
-		return "";
+		return null;
 	}
 	
 	public void saveInterFile(PairContainer<String, Iterator<String>> interFile) {

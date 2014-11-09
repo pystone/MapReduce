@@ -14,7 +14,7 @@ import java.util.Scanner;
  * @author PY
  *
  */
-public class HDFileSplit {
+public class KPFileSplit {
 	public static ArrayList<String> split (String filePath, int chunkSizeB, String directory, String fileName) throws FileNotFoundException {
 		File file = new File(filePath);
 		Scanner scan = new Scanner(file);

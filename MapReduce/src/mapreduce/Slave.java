@@ -3,6 +3,10 @@
  */
 package mapreduce;
 
+import hdfs.KPFSException;
+import hdfs.KPFile;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -57,18 +61,38 @@ public class Slave {
 	public void map(JobInfo job) {
 		PairContainer<String, String> interPairs = new PairContainer<String, String>();
 		MRBase ins = job.getMRInstance();
+		
 		String inFileName = job.getInFileName();
-		String content = job.getFileContent();
+		KPFile file = new KPFile(true);
 		try {
+			file.open(inFileName);
+			String content = file.exportToString();
 			ins.map(inFileName, content, interPairs);
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (FileNotFoundException | KPFSException e1) {
+			e1.printStackTrace();
 		}
+		
 		PairContainer<String, Iterator<String>> mergedInterPairs = interPairs.mergeSameKey();
+		// TODO: change into KPFile
 		job.saveInterFile(mergedInterPairs);
+		// TODO: send complete msg back to master
 	}
 	
 	public void reduce(JobInfo job) {
+		PairContainer<String, String> resultPairs = new PairContainer<String, String>();
+		MRBase ins = job.getMRInstance();
+		PairContainer<String, Iterator<String>> interPairs = job.getInterPairs();
+		Iterator<Pair<String, Iterator<String>>> iter = interPairs.getInitialIterator();
 		
+		for (; iter.hasNext(); ) {
+			Pair<String, Iterator<String>> cur = iter.next();
+			try {
+				ins.reduce(cur.getFirst(), cur.getSecond(), resultPairs);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		job.saveResultFile(resultPairs);
+		// TODO: send complete msg back to master
 	}
 }
