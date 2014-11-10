@@ -94,9 +94,9 @@ public class JobInfo implements Serializable {
 		return GlobalInfo.sharedInfo().SlaveRootDir + "/" + _taskName + "/" + GlobalInfo.sharedInfo().ResultDirName + "/" + _taskName + "." + _jobId;
 	}
 	
-	public PairContainer<String, Iterator<String>> getInterPairs() {
+	public PairContainer getInterPairs() {
 		KPFile file = new KPFile(true);
-		PairContainer<String, Iterator<String>> pairs = new PairContainer<String, Iterator<String>>();
+		PairContainer pairs = new PairContainer();
 		
 		try {
 			file.open(getInterFileName());
@@ -113,11 +113,11 @@ public class JobInfo implements Serializable {
 		return null;
 	}
 	
-	public void saveInterFile(PairContainer<String, Iterator<String>> interFile) {
+	public void saveInterFile(PairContainer interFile) {
 		// TODO
 	}
 	
-	public void saveResultFile(PairContainer<String, String> resultFile) {
+	public void saveResultFile(PairContainer resultFile) {
 		// TODO
 	}
 }

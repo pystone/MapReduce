@@ -10,7 +10,15 @@ import java.util.ArrayList;
  *
  */
 public abstract class MRBase implements Mapper<String, String, String, String>, 
-Reducer<String, String, String, String> {
+	Reducer<String, String, String, String> {
+
+	public void map(String key, String value, PairContainer output) {
+	}
+	
+	public void reduce(String key, ArrayList<String> value,
+			PairContainer resultPairs) {
+	}
+	
 //	private ArrayList<Class> _types = null;
 //	public Map _mapclazz = null;
 //	public Reduce _reduceclazz = null;
