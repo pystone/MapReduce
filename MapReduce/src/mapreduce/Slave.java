@@ -47,7 +47,18 @@ public class Slave {
 		
 	}
 	
-	public void newJob(JobInfo job) {
+	public void newJob(Object[] content) {
+		JobInfo job = (JobInfo) content[0];
+		
+		/* save the file into disk */
+		String fileContent = (String) content[1];
+		KPFile file = new KPFile(true);
+		try {
+			file.restoreFromString(job.getInputFileName(), fileContent);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		System.out.println("get a new job: " + job._jobId + " " + job._taskName + " " + job._type);
 		if (job._type == JobInfo.JobType.MAP) {
 			map(job);
@@ -73,7 +84,7 @@ public class Slave {
 		}
 		
 		PairContainer<String, Iterator<String>> mergedInterPairs = interPairs.mergeSameKey();
-		// TODO: change into KPFile
+
 		job.saveInterFile(mergedInterPairs);
 		// TODO: send complete msg back to master
 	}

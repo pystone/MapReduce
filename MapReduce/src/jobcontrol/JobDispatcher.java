@@ -3,6 +3,10 @@
  */
 package jobcontrol;
 
+import hdfs.KPFSException;
+import hdfs.KPFile;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import mapreduce.Master;
@@ -31,7 +35,18 @@ public class JobDispatcher extends Thread{
 			Message msg = new Message();
 			msg._type = Message.MessageType.NEW_JOB;
 			msg._source = 0;
-			msg._content = job;
+			
+			KPFile file = new KPFile(true);
+			String fileContent = null;
+			
+			try {
+				fileContent = file.exportToString();
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+			}
+			Object[] content = {job, fileContent};
+			
+			msg._content = content;
 			try {
 				NetworkHelper.send(Master.sharedMaster()._slvSocket.get(job._sid), msg);
 			} catch (IOException e) {

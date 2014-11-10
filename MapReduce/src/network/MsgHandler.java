@@ -40,7 +40,7 @@ public class MsgHandler extends Thread {
 					break;
 					
 				case NEW_JOB:
-					Slave.sharedSlave().newJob((JobInfo)msg._content);
+					Slave.sharedSlave().newJob((Object[])msg._content);
 				/* slave -> master */
 				}
 			} catch (ClassNotFoundException | IOException e) {

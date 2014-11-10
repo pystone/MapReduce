@@ -1,6 +1,7 @@
 package example;
 
 import java.util.Iterator;
+import java.util.StringTokenizer;
 
 import mapreduce.MRBase;
 import mapreduce.Mapper;
@@ -54,9 +55,13 @@ public class WordCounter extends MRBase {
 	}
 	@Override
 	public void map(String key, String value,
-			PairContainer<String, String> output) throws Exception {
-		// TODO: for every word
-		output.emit(key, "1");
+			PairContainer<String, String> output) {
+		
+		StringTokenizer tokenizer = new StringTokenizer(value);
+		while (tokenizer.hasMoreTokens()) {
+			output.emit(tokenizer.nextToken(), "1");
+			System.out.println(tokenizer.nextToken());
+		}
 		
 	}
 }

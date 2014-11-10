@@ -19,6 +19,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.StringTokenizer;
 
 /**
  * @author PY
@@ -42,17 +43,10 @@ public class MapReduce {
 		}
 //		start(args[0], args[1]);
 		
-		File a = new File("words.txt");
-		try {
-			Scanner s1 = new Scanner(a);
-			System.out.println(s1.nextLine());
-			System.out.println(s1.nextLine());
-			System.out.println(s1.nextLine());
-			Scanner s2 = new Scanner(a);
-			System.out.println(s2.nextLine());
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		String line = "aaa vvs sdf wer sdfwe-12=3 21341 -123";
+		StringTokenizer tokenizer = new StringTokenizer(line);
+		while (tokenizer.hasMoreTokens()) {
+			System.out.println(tokenizer.nextToken());
 		}
 		
 		
