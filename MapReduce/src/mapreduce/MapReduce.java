@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,11 +44,19 @@ public class MapReduce {
 		}
 //		start(args[0], args[1]);
 		
-		String line = "aaa vvs sdf wer sdfwe-12=3 21341 -123";
-		StringTokenizer tokenizer = new StringTokenizer(line);
-		while (tokenizer.hasMoreTokens()) {
-			System.out.println(tokenizer.nextToken());
+		File a = new File("/Users/PY/Documents/cmu/f14/640/proj3/MapReduce/test_files/a/a.txt");
+		System.out.println(a.getParent());
+		a.getParentFile().mkdirs();
+		FileOutputStream outStream;
+		try {
+			outStream = new FileOutputStream(a);
+			outStream.write("abc".getBytes());
+			outStream.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		
 		
 		
 	}

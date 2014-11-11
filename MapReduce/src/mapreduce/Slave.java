@@ -4,6 +4,7 @@
 package mapreduce;
 
 import hdfs.KPFSException;
+import hdfs.KPFSStub;
 import hdfs.KPFile;
 
 import java.io.FileNotFoundException;
@@ -14,7 +15,9 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 import jobcontrol.JobInfo;
+import network.Message;
 import network.MsgHandler;
+import network.NetworkHelper;
 
 /**
  * @author PY
@@ -31,8 +34,11 @@ public class Slave {
 	
 	public int _sid;
 	public Socket _socket;
+	public KPFSStub _kpfs;
 	
 	private Slave() {
+		_kpfs = new KPFSStub();
+		
 		try {
 			_socket = new Socket(GlobalInfo.sharedInfo().MasterHost, GlobalInfo.sharedInfo().MasterPort);
 			MsgHandler handler = new MsgHandler(_socket);
@@ -48,19 +54,20 @@ public class Slave {
 		
 	}
 	
-	public void newJob(Object[] content) {
-		JobInfo job = (JobInfo) content[0];
+	public void newJob(JobInfo job) {
+		System.out.println("get a new job: " + job._jobId + " " + job._taskName + " " + job._type);
 		
-		/* save the file into disk */
-		String fileContent = (String) content[1];
-		KPFile file = new KPFile(true);
+		// download files
 		try {
-			file.restoreFromString(job.getInputFileName(), fileContent);
+			job._inputFile = _kpfs.getFile(job._inputFile._relDir, job._inputFile._fileName);
+			job._outputFile = _kpfs.getFile(job._outputFile._relDir, job._outputFile._fileName);
+			job._mrFile = _kpfs.getFile(job._mrFile._relDir, job._mrFile._fileName);
 		} catch (IOException e) {
+			System.out.println("Failed to download files!");
 			e.printStackTrace();
 		}
 		
-		System.out.println("get a new job: " + job._jobId + " " + job._taskName + " " + job._type);
+		// do map or reduce
 		if (job._type == JobInfo.JobType.MAP) {
 			map(job);
 		} else if (job._type == JobInfo.JobType.REDUCE) {
@@ -74,19 +81,18 @@ public class Slave {
 		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 		
-		String inFileName = job.getInFileName();
-		KPFile file = new KPFile(true);
+		String content;
 		try {
-			file.open(inFileName);
-			String content = file.exportToString();
-			ins.map(inFileName, content, interPairs);
-		} catch (FileNotFoundException | KPFSException e1) {
-			e1.printStackTrace();
+			content = job._inputFile.getString();
+			ins.map(job._inputFile._fileName, content, interPairs);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 		}
 		
 		job.saveInterFile(interPairs);
 
-		// TODO: send complete msg back to master
+		// send complete msg back to master
+		finishJob(job);
 	}
 	
 	public void reduce(JobInfo job) {
@@ -103,7 +109,22 @@ public class Slave {
 				e.printStackTrace();
 			}
 		}
+		
 		job.saveResultFile(resultPairs);
-		// TODO: send complete msg back to master
+		
+		// send complete msg back to master
+		finishJob(job);
+	}
+	
+	public void finishJob(JobInfo job) {
+		Message fin = new Message();
+		fin._type = Message.MessageType.JOB_COMPLETE;
+		fin._source = _sid;
+		fin._content = job;
+		try {
+			NetworkHelper.send(_socket, fin);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

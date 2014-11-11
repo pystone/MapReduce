@@ -35,18 +35,7 @@ public class JobDispatcher extends Thread{
 			Message msg = new Message();
 			msg._type = Message.MessageType.NEW_JOB;
 			msg._source = 0;
-			
-			KPFile file = new KPFile(true);
-			String fileContent = null;
-			
-			try {
-				fileContent = file.exportToString();
-			} catch (FileNotFoundException e1) {
-				e1.printStackTrace();
-			}
-			Object[] content = {job, fileContent};
-			
-			msg._content = content;
+			msg._content = job;
 			try {
 				NetworkHelper.send(Master.sharedMaster()._slvSocket.get(job._sid), msg);
 			} catch (IOException e) {

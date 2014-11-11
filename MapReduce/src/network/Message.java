@@ -15,7 +15,7 @@ public class Message implements Serializable {
 	public enum MessageType {
 		HELLO,
 		NEW_JOB,
-		KPFS_REQ
+		JOB_COMPLETE
 	};
 	
 	public MessageType _type;

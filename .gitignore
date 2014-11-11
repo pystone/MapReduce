@@ -1,4 +1,5 @@
-MapReduce/ResultFiles
+MapReduce/ResultFiles/*
 *.class
-MapReduce/IntermediateFiles
-MapReduce/ChunkInputFiles
+MapReduce/IntermediateFiles/*
+MapReduce/ChunkInputFiles/*
+MapReduce/MapReduce/bin/*

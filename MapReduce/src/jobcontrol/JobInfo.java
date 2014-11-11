@@ -8,6 +8,7 @@ import hdfs.KPFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -37,9 +38,11 @@ public class JobInfo implements Serializable {
 	public int _taskId = 0;
 	public int _sid = 0;
 	public JobType _type = JobInfo.JobType.NONE;
-	public String _mrPath = "";
+	public KPFile _mrFile = null;
+	public KPFile _inputFile = null;
+	public KPFile _outputFile = null;
 	public String _taskName = "";
-	public String _dir = "";
+	
 	
 	public JobInfo(int jobId, String taskName) {
 		_jobId = jobId;
@@ -73,51 +76,50 @@ public class JobInfo implements Serializable {
 		
 	}
 	
-	public String getInputFileName() {
-		if (_type == JobInfo.JobType.MAP) {
-			return getInFileName();
-		} else if (_type == JobInfo.JobType.REDUCE) {
-			return getInterFileName();
-		}
-		return null;
-	}
-	
-	public String getInFileName() {
-		return GlobalInfo.sharedInfo().SlaveRootDir + "/" + _taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/" + _taskName + "." + _jobId;
-	}
-	
-	public String getInterFileName() {
-		return GlobalInfo.sharedInfo().SlaveRootDir + "/" + _taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName + "/" + _taskName + "." + _jobId;
-	}
-	
-	public String getResultFileName() {
-		return GlobalInfo.sharedInfo().SlaveRootDir + "/" + _taskName + "/" + GlobalInfo.sharedInfo().ResultDirName + "/" + _taskName + "." + _jobId;
-	}
-	
 	public PairContainer getInterPairs() {
-		KPFile file = new KPFile(true);
-		PairContainer pairs = new PairContainer();
+		if (_type != JobInfo.JobType.REDUCE) {
+			System.out.println("WARNING: try to get intermediate pair for map job!");
+			return null;
+		}
 		
+		PairContainer ret = new PairContainer();
 		try {
-			file.open(getInterFileName());
-			
-			while (file.hasNextLine()) {
-				String line = file.nextLine();
-				
-			}
-		} catch (FileNotFoundException | KPFSException e) {
-			// TODO Auto-generated catch block
+			String instr = _inputFile.getString();
+			// TODO: parse intermediate pairs from input file into ret
+		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		// TODO
-		return null;
+		
+		return ret;
 	}
 	
 	public void saveInterFile(PairContainer interFile) {
-		// TODO
+		if (_type != JobInfo.JobType.MAP) {
+			System.out.println("WARNING: try to save intermediate pair for reduce job!");
+			return;
+		}
+		
+		String toSaveStr = ""; // TODO: encode intermediate pairs into a string
+		
+		try {
+			_outputFile.saveFileLocally(toSaveStr.getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void saveResultFile(PairContainer resultFile) {
-		// TODO
+		if (_type != JobInfo.JobType.REDUCE) {
+			System.out.println("WARNING: try to save result pair for map job!");
+			return;
+		}
+		
+		String toSaveStr = ""; // TODO: encode result pairs into a string
+		
+		try {
+			_outputFile.saveFileLocally(toSaveStr.getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

@@ -18,6 +18,7 @@ public class GlobalInfo {
 	public String ChunkDirName = "ChunkInputFiles";
 	public String ResultDirName = "ResultFiles";
 	public String SlaveRootDir = "/tmp/mapreduce/";
+	public String FileRootDir = "/tmp/mapreduce/";
 	
 	
 	public static GlobalInfo _sharedInfo = null;
