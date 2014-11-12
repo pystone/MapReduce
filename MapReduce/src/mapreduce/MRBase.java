@@ -3,7 +3,7 @@
  */
 package mapreduce;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * @author PY
@@ -15,7 +15,7 @@ public abstract class MRBase implements Mapper<String, String, String, String>,
 	public void map(String key, String value, PairContainer output) {
 	}
 	
-	public void reduce(String key, ArrayList<String> value,
+	public void reduce(String key, Iterator<String> value,
 			PairContainer resultPairs) {
 	}
 	

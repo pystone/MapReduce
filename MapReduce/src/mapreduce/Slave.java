@@ -99,12 +99,12 @@ public class Slave {
 		PairContainer resultPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 		PairContainer interPairs = job.getInterPairs();
-		Iterator<Entry<String, ArrayList<String>>> iter = interPairs.getInitialIterator();
+		Iterator<Pair> iter = interPairs.getInitialIterator();
 		
 		for (; iter.hasNext(); ) {
-			Entry<String, ArrayList<String>> cur = iter.next();
+			Pair cur = iter.next();
 			try {
-				ins.reduce(cur.getKey(), cur.getValue(), resultPairs);
+				ins.reduce(cur.getFirst(), cur.getSecond(), resultPairs);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

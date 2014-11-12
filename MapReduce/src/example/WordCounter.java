@@ -1,9 +1,7 @@
 package example;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.StringTokenizer;
-
 
 import mapreduce.MRBase;
 import mapreduce.PairContainer;
@@ -44,13 +42,11 @@ public class WordCounter extends MRBase {
 //		
 //	}
 	@Override
-	public void reduce(String key, ArrayList<String> values,
+	public void reduce(String key, Iterator<String> values,
 			PairContainer output) {
 		Integer sum = 0;
-		Iterator<String> itor = values.iterator();
-		
-		while (itor.hasNext()) {
-			sum += Integer.parseInt(itor.next());
+		while (values.hasNext()) {
+			sum += Integer.parseInt(values.next());
 		}
 		output.emit(key, sum.toString());
 		

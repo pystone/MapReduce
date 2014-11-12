@@ -101,6 +101,8 @@ public class Master {
 		(new File(chunkDir)).mkdirs();
 		(new File(resultDir)).mkdirs();
 		
+		// 
+		
 		try {
 			ArrayList<String> files = KPFileSplit.split(inputFile, GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
 			int jobid = 0;

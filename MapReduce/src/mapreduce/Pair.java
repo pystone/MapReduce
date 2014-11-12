@@ -5,6 +5,8 @@ package mapreduce;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 
 
@@ -15,17 +17,34 @@ import java.io.Serializable;
  */
 public class Pair implements Comparable, Serializable {	
     private String first;
-    private String second;
+    private ArrayList<String> list;
     
     public Pair(String key, String val) {
-    	super();
     	this.first = key;
-    	this.second = val;
+    	if(list == null) {
+    		list = new ArrayList<String>();
+    	}
+		list.add(val);
     }
-
+    
+    public Pair(String key, Iterator<String> val) {
+    	this.first = key;
+    	
+    	while(val.hasNext()) {
+	    	if(list == null) {
+	    		list = new ArrayList<String>();
+	    	}
+			list.add(val.next());
+    	}
+    }
+    
     public int hashCode() {
     	int hashFirst = first != null ? first.hashCode() : 0;
-    	int hashSecond = second != null ? second.hashCode() : 0;
+    	
+    	int hashSecond = 0;
+    	for(String str : list) {
+    		hashSecond += str.hashCode();
+    	}
 
     	return (hashFirst + hashSecond) * hashSecond + hashFirst;
     }
@@ -37,9 +56,9 @@ public class Pair implements Comparable, Serializable {
     		((  this.first == otherPair.first ||
     			( this.first != null && otherPair.first != null &&
     			  this.first.equals(otherPair.first))) &&
-    		 (	this.second == otherPair.second ||
-    			( this.second != null && otherPair.second != null &&
-    			  this.second.equals(otherPair.second))) );
+    		 (	this.list == otherPair.list ||
+    			( this.list != null && otherPair.list != null &&
+    			  this.list.equals(otherPair.list))) );
     	}
 
     	return false;
@@ -47,7 +66,15 @@ public class Pair implements Comparable, Serializable {
 
     public String toString()
     { 
-           return "(" + first + ", " + second + ")"; 
+    	StringBuilder sb = new StringBuilder();
+    	for(int i = 0; i < list.size(); i++) {
+    		if(i > 0) {
+    			sb.append(",");
+    		}
+			sb.append(list.get(i));
+    	}
+    	
+        return "(" + first + "; " + sb.toString() + ")"; 
     }
 
     public String getFirst() {
@@ -58,17 +85,22 @@ public class Pair implements Comparable, Serializable {
     	this.first = first;
     }
 
-    public String getSecond() {
-    	return second;
+    public Iterator<String> getSecond() {
+    	return list.iterator();
     }
 
-    public void setSecond(String second) {
-    	this.second = second;
+    public void setSecond(Iterator<String> second) {
+    	while(second.hasNext()) {
+    		list.add(second.next());
+    	}
     }
 
 	@Override
-	public int compareTo(Object o) {
-		Pair target = (Pair)o;
-        return getFirst().compareTo(target.getFirst());
+	public int compareTo(Object other) {
+		if (other instanceof Pair) {
+			Pair target = (Pair)other;
+			return getFirst().compareTo(target.getFirst());
+		}
+		return -1;
 	}
 }

@@ -12,24 +12,26 @@ import java.util.Scanner;
 
 /**
  * @author PY
- *
+ * 
  */
 public class KPFileSplit {
-	public static ArrayList<String> split (String filePath, int chunkSizeB, String directory, String fileName) throws FileNotFoundException {
+	public static ArrayList<String> split(String filePath, int chunkSizeB,
+			String directory, String fileName) throws FileNotFoundException {
 		File file = new File(filePath);
 		Scanner scan = new Scanner(file);
 		ArrayList<String> smallFiles = new ArrayList<String>();
 		String curFile = "";
 		String curLine = "";
 		int partCnt = 0;
-		
+
 		while (scan.hasNextLine()) {
-			for (; scan.hasNextLine() && curFile.length()<chunkSizeB; ) {
-				curLine=scan.nextLine();
+			for (; scan.hasNextLine() && curFile.length() < chunkSizeB;) {
+				curLine = scan.nextLine();
 				curFile += curLine + '\n';
 			}
-			
-			String curFileName = directory + fileName + ".part"+String.format("%03d", partCnt++);
+
+			String curFileName = directory + fileName + ".part"
+					+ String.format("%03d", partCnt++);
 			File outFile = new File(curFileName);
 			FileOutputStream outStream = new FileOutputStream(outFile);
 			try {
@@ -39,9 +41,9 @@ public class KPFileSplit {
 				System.out.println("Failed to write chunk file!");
 				e.printStackTrace();
 			}
-			
+
 			smallFiles.add(curFileName);
-			
+
 			/* release the memory */
 			curFile = curLine = "";
 		}
