@@ -25,27 +25,29 @@ import network.NetworkHelper;
 
 /**
  * @author PY
- *
+ * 
  */
 public class Master {
 	private static Master _sharedMaster;
+
 	public static Master sharedMaster() {
 		if (_sharedMaster == null) {
 			_sharedMaster = new Master();
 		}
 		return _sharedMaster;
 	}
-	
+
 	private volatile AtomicInteger _sid = null;
 	private volatile AtomicInteger _taskId = null;
 	public HashMap<Integer, Socket> _slvSocket = new HashMap<Integer, Socket>();
+
 	private Master() {
 		_sid = new AtomicInteger(0);
 		_taskId = new AtomicInteger(0);
 		Listen l = new Listen(GlobalInfo.sharedInfo().MasterPort);
 		l.start();
 	}
-	
+
 	public void start() {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
@@ -58,10 +60,10 @@ public class Master {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 		}
 	}
-	
+
 	public void inputHandler(String[] cmd) {
 		switch (cmd[0]) {
 		case "new":
@@ -69,58 +71,63 @@ public class Master {
 			break;
 		}
 	}
-	
+
 	public void newSlave(Socket socket) {
 		int sid = _sid.incrementAndGet();
 		_slvSocket.put(sid, socket);
-		
+
 		Message hello = new Message();
-        hello._type = Message.MessageType.HELLO;
-        hello._content = sid;  
-        try {
+		hello._type = Message.MessageType.HELLO;
+		hello._content = sid;
+		try {
 			NetworkHelper.send(socket, hello);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 	}
-	
-	public void newTask(String inputFile, String mapperPath, String reducerPath, String taskName) {
+
+	public void newTask(String inputFile, String mapperPath,
+			String reducerPath, String taskName) {
 		int taskId = _taskId.incrementAndGet();
 		Task task = new Task(taskId);
 		task._mapperPath = mapperPath;
 		task._reducerPath = reducerPath;
-		
-		String dirPath = inputFile.substring(0, inputFile.lastIndexOf('/') + 1); /* ending with / */
+
+		String dirPath = inputFile.substring(0, inputFile.lastIndexOf('/') + 1);
 		String fileName = inputFile.substring(inputFile.lastIndexOf("/") + 1);
-		String interDir = dirPath + GlobalInfo.sharedInfo().IntermediateDirName + "/";
+		String interDir = dirPath + GlobalInfo.sharedInfo().IntermediateDirName
+				+ "/";
 		String chunkDir = dirPath + GlobalInfo.sharedInfo().ChunkDirName + "/";
-		String resultDir = dirPath + GlobalInfo.sharedInfo().ResultDirName + "/";
-		
-		(new File(interDir)).mkdirs();	/* create the folder to store intermediate files */
+		String resultDir = dirPath + GlobalInfo.sharedInfo().ResultDirName
+				+ "/";
+
+		/* create the folder to store intermediate files */
+		(new File(interDir)).mkdirs();
 		(new File(chunkDir)).mkdirs();
 		(new File(resultDir)).mkdirs();
-		
-		// 
-		
+
+		// copy files from HDFS
+
 		try {
-			ArrayList<String> files = KPFileSplit.split(inputFile, GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
+			ArrayList<String> files = KPFileSplit.split(inputFile,
+					GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
 			int jobid = 0;
-			for (String fn: files) {
+			for (String fn : files) {
 				JobInfo job = new JobInfo(++jobid, taskName);
 				job._taskId = taskId;
 				job._sid = getFreeSlave();
 				job._type = JobInfo.JobType.MAP;
-				
+
 				task._jobs.put(jobid, job);
 			}
-			
+
 			JobManager.sharedJobManager().sendJobs(task._jobs.values());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/* load balancer */
 	public int getFreeSlave() {
 		Random rand = new Random();
@@ -128,5 +135,5 @@ public class Master {
 		Integer sid = (Integer) _slvSocket.keySet().toArray()[slv];
 		return sid.intValue();
 	}
-	
+
 }
