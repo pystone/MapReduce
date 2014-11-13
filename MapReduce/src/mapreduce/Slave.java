@@ -4,12 +4,19 @@
 package mapreduce;
 
 import hdfs.KPFSException;
-import hdfs.KPFSStub;
+import hdfs.KPFSSlave;
+import hdfs.KPFSSlaveInterface;
 import hdfs.KPFile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -34,10 +41,11 @@ public class Slave {
 	
 	public int _sid;
 	public Socket _socket;
-	public KPFSStub _kpfs;
+	public Registry _registry;
+//	public KPFSStub _kpfs;
 	
 	private Slave() {
-		_kpfs = new KPFSStub();
+//		_kpfs = new KPFSStub();
 		
 		try {
 			_socket = new Socket(GlobalInfo.sharedInfo().MasterHost, GlobalInfo.sharedInfo().MasterPort);
@@ -51,21 +59,32 @@ public class Slave {
 	}
 	
 	public void start() {
+		/* start HDFS */
+		try {
+            KPFSSlave obj = new KPFSSlave();
+            KPFSSlaveInterface stub = (KPFSSlaveInterface) UnicastRemoteObject.exportObject(obj, 0);
+
+            _registry = null;
+            try {
+            	_registry = LocateRegistry.getRegistry(GlobalInfo.sharedInfo().DataSlavePort);
+            	_registry.list();
+            }
+            catch (RemoteException e) { 
+            	System.err.println("Failed to open HDFS service!");
+                e.printStackTrace();
+            }
+            _registry.bind("KPFSSlaveInterface", stub);
+
+            System.out.println("HDFS ready");
+        } catch (Exception e) {
+            System.err.println("Failed to open HDFS service!");
+            e.printStackTrace();
+        }
 		
 	}
 	
 	public void newJob(JobInfo job) {
 		System.out.println("get a new job: " + job._jobId + " " + job._taskName + " " + job._type);
-		
-		// download files
-		try {
-			job._inputFile = _kpfs.getFile(job._inputFile._relDir, job._inputFile._fileName);
-			job._outputFile = _kpfs.getFile(job._outputFile._relDir, job._outputFile._fileName);
-			job._mrFile = _kpfs.getFile(job._mrFile._relDir, job._mrFile._fileName);
-		} catch (IOException e) {
-			System.out.println("Failed to download files!");
-			e.printStackTrace();
-		}
 		
 		// do map or reduce
 		if (job._type == JobInfo.JobType.MAP) {
@@ -81,15 +100,17 @@ public class Slave {
 		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 		
-		String content;
+		String content = job._inputFile.getFileString();
+		ins.map(job._inputFile._fileName, content, interPairs);
+		
+		String localhost = "";
 		try {
-			content = job._inputFile.getString();
-			ins.map(job._inputFile._fileName, content, interPairs);
-		} catch (FileNotFoundException e) {
+			localhost = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			System.err.println("Network error!");
 			e.printStackTrace();
 		}
-		
-		job.saveInterFile(interPairs);
+		job.saveInterFile(interPairs, localhost);
 
 		// send complete msg back to master
 		finishJob(job);
@@ -110,7 +131,14 @@ public class Slave {
 			}
 		}
 		
-		job.saveResultFile(resultPairs);
+		String localhost = "";
+		try {
+			localhost = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			System.err.println("Network error!");
+			e.printStackTrace();
+		}
+		job.saveResultFile(resultPairs, localhost);
 		
 		// send complete msg back to master
 		finishJob(job);

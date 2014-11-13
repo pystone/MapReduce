@@ -4,6 +4,6 @@ import java.util.Iterator;
 
 public interface Reducer <InKeyT, InValT, OutKeyT, OutValT> {
 	
-	public void reduce(InKeyT key, InValT values, PairContainer output) throws Exception;
+	public void reduce(InKeyT key, InValT values, PairContainer output);
 
 }

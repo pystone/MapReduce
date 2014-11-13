@@ -3,6 +3,8 @@
  */
 package mapreduce;
 
+import java.util.ArrayList;
+
 /**
  * @author PY
  *
@@ -19,6 +21,11 @@ public class GlobalInfo {
 	public String ResultDirName = "ResultFiles";
 	public String SlaveRootDir = "/tmp/mapreduce/";
 	public String FileRootDir = "/tmp/mapreduce/";
+	
+	public ArrayList<String> SlaveHosts = new ArrayList<String>();
+	public String DataMasterHost = "localhost";
+	public int DataMasterPort = 9987;
+	public int DataSlavePort = 9986;
 	
 	
 	public static GlobalInfo _sharedInfo = null;

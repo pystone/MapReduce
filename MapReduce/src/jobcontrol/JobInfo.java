@@ -6,13 +6,17 @@ package jobcontrol;
 import hdfs.KPFSException;
 import hdfs.KPFile;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -50,29 +54,50 @@ public class JobInfo implements Serializable {
 	}
 	
 	public MRBase getMRInstance() {
-		Class<?> mrclass;
+		byte[] jarByte = _mrFile.getFileBytes();
+		MRBase mrins = null;
 		try {
-			mrclass = Class.forName("example." + _taskName);
-			Constructor<?> ctor = mrclass.getConstructor(String.class);
-			Object object = ctor.newInstance();
-			MRBase mrins = (MRBase) object;
-			return mrins;
+			
+			File file = File.createTempFile(_taskName, null);
+			file.deleteOnExit();
+			FileOutputStream bout = new FileOutputStream(file);
+			bout.write(jarByte);
+			bout.close();
+			
+			URL[] urls = {file.toURI().toURL()};
+			Class cls = (new URLClassLoader(urls)).loadClass(_taskName);
+			
+			Constructor mapConstr = cls.getConstructor();
+			mrins = (MRBase)mapConstr.newInstance();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (NoSuchMethodException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;
+		
+		
+		return mrins;
 		
 	}
 	
@@ -83,17 +108,13 @@ public class JobInfo implements Serializable {
 		}
 		
 		PairContainer ret = new PairContainer();
-		try {
-			String instr = _inputFile.getString();
-			// TODO: parse intermediate pairs from input file into ret
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		String fileStr = _inputFile.getFileString();
+		// TODO: parse intermediate pairs from input file into ret
 		
 		return ret;
 	}
 	
-	public void saveInterFile(PairContainer interFile) {
+	public void saveInterFile(PairContainer interFile, String localHost) {
 		if (_type != JobInfo.JobType.MAP) {
 			System.out.println("WARNING: try to save intermediate pair for reduce job!");
 			return;
@@ -102,13 +123,13 @@ public class JobInfo implements Serializable {
 		String toSaveStr = ""; // TODO: encode intermediate pairs into a string
 		
 		try {
-			_outputFile.saveFileLocally(toSaveStr.getBytes());
+			_outputFile.saveFileLocally(toSaveStr.getBytes(), localHost);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void saveResultFile(PairContainer resultFile) {
+	public void saveResultFile(PairContainer resultFile, String localHost) {
 		if (_type != JobInfo.JobType.REDUCE) {
 			System.out.println("WARNING: try to save result pair for map job!");
 			return;
@@ -117,7 +138,7 @@ public class JobInfo implements Serializable {
 		String toSaveStr = ""; // TODO: encode result pairs into a string
 		
 		try {
-			_outputFile.saveFileLocally(toSaveStr.getBytes());
+			_outputFile.saveFileLocally(toSaveStr.getBytes(), localHost);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

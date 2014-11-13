@@ -1,7 +1,7 @@
 /**
  * 
  */
-package mapreduce;
+// package mapreduce;
 
 import java.util.Iterator;
 

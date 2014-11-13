@@ -3,8 +3,10 @@
  */
 package mapreduce;
 
+import hdfs.KPFSMaster;
 import hdfs.KPFileSplit;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,11 +15,16 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.StringTokenizer;
@@ -43,19 +50,73 @@ public class MapReduce {
 			System.exit(-1);
 		}
 //		start(args[0], args[1]);
-		
-		File a = new File("/Users/PY/Documents/cmu/f14/640/proj3/MapReduce/test_files/a/a.txt");
-		System.out.println(a.getParent());
-		a.getParentFile().mkdirs();
-		FileOutputStream outStream;
+		File jarFile = new File("jar/WordCounter.jar");
+		byte[] byteArr = new byte[(int)jarFile.length()];
+
 		try {
-			outStream = new FileOutputStream(a);
-			outStream.write("abc".getBytes());
-			outStream.close();
-		} catch (IOException e) {
+			FileInputStream fin = new FileInputStream(jarFile);
+			BufferedInputStream bin = new BufferedInputStream(fin);
+			bin.read(byteArr, 0, byteArr.length);
+			bin.close();
+			fin.close();
+			
+			File file = File.createTempFile("WordCounter", null);
+			file.deleteOnExit();
+			FileOutputStream bout = new FileOutputStream(file);
+			bout.write(byteArr);
+			bout.close();
+			
+//			File file = new File("jar/WordCounter.jar");
+			
+			System.out.println(file.getAbsolutePath());
+			System.out.println(file.exists());
+			
+			URL[] urls = {file.toURI().toURL()};
+			Class cls = (new URLClassLoader(urls)).loadClass("WordCounter");
+			
+			Constructor mapConstr = cls.getConstructor();
+			MRBase mapper = (MRBase)mapConstr.newInstance();
+			mapper.map("xxx", "b", new PairContainer());
+			
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchMethodException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		
+//		File a = new File("/Users/PY/Documents/cmu/f14/640/proj3/MapReduce/test_files/a/a.txt");
+//		System.out.println(a.getParent());
+//		a.getParentFile().mkdirs();
+//		FileOutputStream outStream;
+//		try {
+//			outStream = new FileOutputStream(a);
+//			outStream.write("abc".getBytes());
+//			outStream.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		
 		
 		
@@ -140,5 +201,17 @@ public class MapReduce {
 			} else {
 				System.out.println("failed to mkdir!");
 			}
+		}
+		private static void testKPFSMaster() {
+			KPFSMaster master = new KPFSMaster();
+			master.addFileLocation("a", "1.1.1.1", 14);
+			master.addFileLocation("a", "2.2.2.2", 15);
+			master.addFileLocation("b", "1.1.1.1", 16);
+			master.addFileLocation("c", "3.3.3.3", 17);
+			System.out.println(master.getFileLocation("a"));
+			System.out.println(master.getFileLocation("d"));
+			System.out.println(master.getFileLocation("c"));
+			master.removeFileLocation("a", "1.1.1.1");
+			System.out.println(master.getFileLocation("a"));
 		}
 }
