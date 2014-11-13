@@ -74,7 +74,7 @@ public class Pair implements Comparable, Serializable {
 			sb.append(list.get(i));
     	}
     	
-        return "(" + first + ": " + sb.toString() + ")"; 
+        return first + ":" + sb.toString(); 
     }
 
     public String getFirst() {
