@@ -81,6 +81,19 @@ public class PairContainer implements Serializable {
 		}
 	} 
 	
+	// key1:value1,value2,value3;key2:value1,value2,value3;
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < queue.size(); i++) {
+			Pair pair = queue.poll();
+			if(i > 0) {
+				sb.append(";");
+			}
+			sb.append(pair.toString());
+		}
+		return sb.toString();
+	}
+	
 	public FileOutputStream saveResultStream(String path) {
 		FileOutputStream os = null;
 		BufferedWriter bw = null;
