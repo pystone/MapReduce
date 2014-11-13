@@ -1,12 +1,14 @@
-#!bin/sh
-mkdir tmp
-cp ./src/example/*.java ./tmp/
-cd tmp
-mkdir mapreduce
+#! /bin/bash
+mkdir -p tmp
+cp ./src/example/*.java ./tmp
+cp ./src/mapreduce/MRBase.java ./tmp/
+cp ./src/mapreduce/Pair.java ./tmp/
+cp ./src/mapreduce/PairContainer.java ./tmp/
+javac -cp \* ./tmp/*.java
+cd tmp 
+rm *.java
+jar -cvf example.jar .
+mv example.jar ../
 cd ..
-cp ./src/mapreduce/MRBase.java ./tmp/mapreduce/
-cp ./src/mapreduce/Pair.java ./tmp/mapreduce/
-cp ./src/mapreduce/PairContainer.java ./tmp/mapreduce/
-javac ./tmp/mapreduce/*.java
-javac ./tmp/*.java
-jar -cvf emr.jar ./tmp/*.class
+rm -rf tmp
+
