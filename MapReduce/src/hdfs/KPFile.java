@@ -107,7 +107,7 @@ public class KPFile {
 	}
 //	
 	public String getLocalAbsPath() {
-		return GlobalInfo.sharedInfo().FileRootDir + getRelPath();
+		return GlobalInfo.sharedInfo().getLocalRootDir() + getRelPath();
 	}
 //	
 //	public byte[] getByte() throws IOException {

@@ -50,73 +50,6 @@ public class MapReduce {
 			System.exit(-1);
 		}
 //		start(args[0], args[1]);
-		File jarFile = new File("jar/WordCounter.jar");
-		byte[] byteArr = new byte[(int)jarFile.length()];
-
-		try {
-			FileInputStream fin = new FileInputStream(jarFile);
-			BufferedInputStream bin = new BufferedInputStream(fin);
-			bin.read(byteArr, 0, byteArr.length);
-			bin.close();
-			fin.close();
-			
-			File file = File.createTempFile("WordCounter", null);
-			file.deleteOnExit();
-			FileOutputStream bout = new FileOutputStream(file);
-			bout.write(byteArr);
-			bout.close();
-			
-//			File file = new File("jar/WordCounter.jar");
-			
-			System.out.println(file.getAbsolutePath());
-			System.out.println(file.exists());
-			
-			URL[] urls = {file.toURI().toURL()};
-			Class cls = (new URLClassLoader(urls)).loadClass("WordCounter");
-			
-			Constructor mapConstr = cls.getConstructor();
-			MRBase mapper = (MRBase)mapConstr.newInstance();
-			mapper.map("xxx", "b", new PairContainer());
-			
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-//		File a = new File("/Users/PY/Documents/cmu/f14/640/proj3/MapReduce/test_files/a/a.txt");
-//		System.out.println(a.getParent());
-//		a.getParentFile().mkdirs();
-//		FileOutputStream outStream;
-//		try {
-//			outStream = new FileOutputStream(a);
-//			outStream.write("abc".getBytes());
-//			outStream.close();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 		
 		
 		
@@ -137,12 +70,14 @@ public class MapReduce {
 		
 		loadConfig(prop);
 		
-		if (mstOrSlv.equalsIgnoreCase("m")) {
+		if (mstOrSlv.equalsIgnoreCase("m") && GlobalInfo.sharedInfo().isMaster()) {
 			System.out.println("Master");
 			Master.sharedMaster().start();
-		} else {
+		} else if (mstOrSlv.equalsIgnoreCase("s") && GlobalInfo.sharedInfo().isSlave()) {
 			System.out.println("Slave");
 			Slave.sharedSlave().start();
+		} else {
+			System.out.println("This machine is not included in config file!");
 		}
 	}
 	
@@ -151,6 +86,27 @@ public class MapReduce {
 		GlobalInfo.sharedInfo().SlavePort = Integer.parseInt(prop.getProperty("SlavePort"));
 		GlobalInfo.sharedInfo().MasterHost = prop.getProperty("MasterHost");
 		
+		String[] slaves = prop.getProperty("SlaveHosts").split(",");
+		for(int i=0; i<slaves.length; ++i) {
+			GlobalInfo.sharedInfo().SID2Host.put(i+1, slaves[i].trim());
+		}
+		
+		String[] slaverootdir = prop.getProperty("SlaveRootDir").split(",");
+		for(int i=0; i<slaverootdir.length; ++i) {
+			GlobalInfo.sharedInfo().Host2RootDir.put(slaves[i].trim(), slaverootdir[i].trim());
+		}
+		
+		GlobalInfo.sharedInfo().FileChunkSizeB = Integer.parseInt(prop.getProperty("FileChunkSizeB"));
+		GlobalInfo.sharedInfo().MasterRootDir = prop.getProperty("MasterRootDir");
+		
+		GlobalInfo.sharedInfo().IntermediateDirName = prop.getProperty("IntermediateDirName");
+		GlobalInfo.sharedInfo().ChunkDirName = prop.getProperty("ChunkDirName");
+		GlobalInfo.sharedInfo().ResultDirName = prop.getProperty("ResultDirName");
+		
+		GlobalInfo.sharedInfo().DataMasterHost = prop.getProperty("DataMasterHost");
+		GlobalInfo.sharedInfo().DataMasterPort = Integer.parseInt(prop.getProperty("DataMasterPort"));
+		GlobalInfo.sharedInfo().DataSlavePort = Integer.parseInt(prop.getProperty("DataSlavePort"));
+		
 		_masterPort = Integer.parseInt(prop.getProperty("MasterPort"));
 		_slavePort = Integer.parseInt(prop.getProperty("SlavePort"));
 		_masterHost = prop.getProperty("MasterHost");
@@ -158,23 +114,6 @@ public class MapReduce {
 		for (int i=0; i<_slaveHosts.length; ++i) {
 			_slaveHosts[i] = _slaveHosts[i].trim();
 		}
-		
-//		System.out.println(_masterPort);
-//		System.out.println(_slavePort);
-//		System.out.println(_masterHost);
-//		for (int i=0; i<_slaveHosts.length; ++i) {
-//			System.out.println(_slaveHosts[i]);
-//		}
-		
-//		try {
-//			String local = InetAddress.getLocalHost().getHostName().toString();
-//			System.out.println(local);
-//			if (_masterHost.equals(local)) {
-//				System.out.println("yes!");
-//			}
-//		} catch (UnknownHostException e) {
-//			e.printStackTrace();
-//		}
 		
 	}
 	
@@ -213,5 +152,62 @@ public class MapReduce {
 			System.out.println(master.getFileLocation("c"));
 			master.removeFileLocation("a", "1.1.1.1");
 			System.out.println(master.getFileLocation("a"));
+		}
+		
+		private static void testLoadJar() {
+			File jarFile = new File("jar/WordCounter.jar");
+			byte[] byteArr = new byte[(int)jarFile.length()];
+
+			try {
+				FileInputStream fin = new FileInputStream(jarFile);
+				BufferedInputStream bin = new BufferedInputStream(fin);
+				bin.read(byteArr, 0, byteArr.length);
+				bin.close();
+				fin.close();
+				
+				File file = File.createTempFile("WordCounter", null);
+				file.deleteOnExit();
+				FileOutputStream bout = new FileOutputStream(file);
+				bout.write(byteArr);
+				bout.close();
+				
+//				File file = new File("jar/WordCounter.jar");
+				
+				System.out.println(file.getAbsolutePath());
+				System.out.println(file.exists());
+				
+				URL[] urls = {file.toURI().toURL()};
+				Class cls = (new URLClassLoader(urls)).loadClass("WordCounter");
+				
+				Constructor mapConstr = cls.getConstructor();
+				MRBase mapper = (MRBase)mapConstr.newInstance();
+				mapper.map("xxx", "b", new PairContainer());
+				
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NoSuchMethodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 }

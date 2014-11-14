@@ -21,7 +21,7 @@ public class KPFSSlave implements KPFSSlaveInterface {
 
 	@Override
 	public String getFileString(String relPath) throws KPFSException {
-		File file = new File(GlobalInfo.sharedInfo().FileRootDir + relPath);
+		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath);
 		Scanner exp = null;
 		try {
 			exp = new Scanner(file);
@@ -39,7 +39,7 @@ public class KPFSSlave implements KPFSSlaveInterface {
 
 	@Override
 	public byte[] getFileBytes(String relPath) throws KPFSException {
-		File file = new File(GlobalInfo.sharedInfo().FileRootDir + relPath); 
+		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath); 
 		byte[] byteArr = new byte[(int)file.length()];
 		FileInputStream fin = null;
 		try {
@@ -63,7 +63,7 @@ public class KPFSSlave implements KPFSSlaveInterface {
 	
 	@Override
 	public void storeFile(String relPath, byte[] content) throws KPFSException {
-		File file = new File(GlobalInfo.sharedInfo().FileRootDir + relPath); 
+		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath); 
 		file.getParentFile().mkdirs();
 		
 		FileOutputStream outStream = null;
