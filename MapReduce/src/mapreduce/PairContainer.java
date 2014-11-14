@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
@@ -55,7 +54,11 @@ public class PairContainer implements Serializable {
 					Pair newPair = new Pair(currentKey, list.iterator());			
 					newQueue.offer(newPair);
 				}
-				list = new ArrayList<String>(); 
+				list = new ArrayList<String>();
+				Iterator<String> val = pair.getSecond();
+				while(val.hasNext()) {
+					list.add(val.next());
+				}
 				currentKey = key;
 			}
 		}
@@ -80,19 +83,6 @@ public class PairContainer implements Serializable {
 			e.printStackTrace();
 		}
 	} 
-	
-	// key1:value1,value2,value3;key2:value1,value2,value3;
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		for(int i = 0; i < queue.size(); i++) {
-			Pair pair = queue.poll();
-			if(i > 0) {
-				sb.append(";");
-			}
-			sb.append(pair.toString());
-		}
-		return sb.toString();
-	}
 	
 	public FileOutputStream saveResultStream(String path) {
 		FileOutputStream os = null;
@@ -121,4 +111,41 @@ public class PairContainer implements Serializable {
 		
 		return os;
 	}
+	
+	// PairContainer => key1:value1,value2,value3;key2:value1,value2,value3;
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			Iterator<Pair> itor = queue.iterator();
+			int i = 0;
+			while(itor.hasNext()) {
+				Pair pair = itor.next();
+				if(i > 0) {
+					sb.append(";");
+				}
+				sb.append(pair.toString());
+				i++;
+			}
+			return sb.toString();
+		}
+		
+		// key1:value1,value2,value3;key2:value1,value2,value3; => PairContainer 
+		public void restoreFromString(String str) {
+			if(str == null) {
+				return;
+			}
+			String[] pairStrs = str.split(";");
+			for(String pairStr : pairStrs) { 
+				String[] parts = pairStr.split(":");
+				String key = parts[0];
+				String valueList = parts[1];
+				if(valueList != null) {
+					String[] values = parts[1].split(",");
+					for(String value : values) {
+						Pair pair = new Pair(key, value);
+						queue.offer(pair);
+					}
+				}
+			}
+			mergeSameKey();
+		}
 }
