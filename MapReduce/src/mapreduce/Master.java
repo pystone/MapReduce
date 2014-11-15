@@ -5,6 +5,8 @@ package mapreduce;
 
 import hdfs.KPFSMaster;
 import hdfs.KPFSMasterInterface;
+import hdfs.KPFSSlave;
+import hdfs.KPFSSlaveInterface;
 import hdfs.KPFile;
 
 import java.io.BufferedReader;
@@ -57,7 +59,7 @@ public class Master {
 	}
 
 	private KPFSMaster _kpfsMaster;
-
+	
 	public void start() {
 		/* start HDFS */
 		_kpfsMaster = new KPFSMaster();
@@ -67,10 +69,10 @@ public class Master {
 			Registry registry = null;
 			try {
 				registry = LocateRegistry
-						.getRegistry(GlobalInfo._sharedInfo.DataMasterPort);
+						.getRegistry(GlobalInfo.sharedInfo().DataMasterPort);
 				registry.list();
 			} catch (RemoteException e) {
-				registry = LocateRegistry.createRegistry(1099);
+				registry = LocateRegistry.createRegistry(GlobalInfo.sharedInfo().DataMasterPort);
 			}
 			registry.bind("KPFSMasterInterface", stub);
 
@@ -78,7 +80,7 @@ public class Master {
 		} catch (RemoteException | AlreadyBoundException e) {
 			e.printStackTrace();
 		}
-
+		
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
 			String line = null;
@@ -137,12 +139,16 @@ public class Master {
 		(new File(interDir)).mkdirs();
 		(new File(chunkDir)).mkdirs();
 		(new File(resultDir)).mkdirs();
-
+		
+		File jar = new File(GlobalInfo.sharedInfo().JarFilePath, GlobalInfo.sharedInfo().JarFileName);
+		_kpfsMaster.addFileLocation(mapperPath, GlobalInfo.sharedInfo().DataMasterHost, (int)jar.length());
+		
 		ArrayList<String> files = _kpfsMaster.splitFile(inputFile,
 				GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
 		int jobId = 0;
 		for (String fn : files) {
 			JobInfo job = new JobInfo(++jobId, taskName);
+			job._mrFile = new KPFile(GlobalInfo.sharedInfo().JarFilePath, GlobalInfo.sharedInfo().JarFileName);
 			job._taskId = taskId;
 			job._sid = getFreeSlave();
 			job._type = JobInfo.JobType.MAP;
@@ -179,6 +185,7 @@ public class Master {
 			int jobId = 0;
 			for (int i = 0; i < GlobalInfo.sharedInfo().NumberOfReducer; i++) {
 				JobInfo reduceJob = new JobInfo(++jobId, currentTask._taskName);
+				reduceJob._mrFile = new KPFile(GlobalInfo.sharedInfo().JarFilePath, GlobalInfo.sharedInfo().JarFileName);
 				reduceJob._taskId = currentTask._taskId;
 				reduceJob._sid = getFreeSlave();
 				reduceJob._type = JobInfo.JobType.REDUCE;

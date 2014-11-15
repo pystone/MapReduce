@@ -15,8 +15,8 @@ IntermediateDirName = IntermediateFiles
 ChunkDirName = ChunkInputFiles
 ResultDirName = ResultFiles
 
-DataMasterHost = localhost
-DataMasterPort = 9987
-DataSlavePort = 9986
+DataMasterHost = 128.237.191.22
+DataMasterPort = 16100
+DataSlavePort = 16101
 
 

@@ -30,7 +30,10 @@ public class GlobalInfo {
 	public String ChunkDirName = "ChunkInputFiles";
 	public String ResultDirName = "ResultFiles";
 	
-	public String DataMasterHost = "localhost";
+	public String JarFilePath = "jar";
+	public String JarFileName = "WordCounter.jar";
+	
+	public String DataMasterHost = "128.237.162.33";
 	public int DataMasterPort = 9987;
 	public int DataSlavePort = 9986;
 	

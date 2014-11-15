@@ -51,14 +51,14 @@ public class JobInfo implements Serializable {
 		byte[] jarByte = _mrFile.getFileBytes();
 		MRBase mrins = null;
 		try {
-
+//			Class cls = new ClassLoader().defineClass(_taskName, jarByte, 0, jarByte.length);
 			File file = File.createTempFile(_taskName, null);
 			file.deleteOnExit();
 			FileOutputStream bout = new FileOutputStream(file);
 			bout.write(jarByte);
 			bout.close();
-
-			URL[] urls = { file.toURI().toURL() };
+			URL url = file.toURL();
+			URL[] urls = new URL[]{url};
 			Class cls = (new URLClassLoader(urls)).loadClass(_taskName);
 
 			Constructor mapConstr = cls.getConstructor();

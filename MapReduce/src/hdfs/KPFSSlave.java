@@ -40,7 +40,8 @@ public class KPFSSlave implements KPFSSlaveInterface {
 
 	@Override
 	public byte[] getFileBytes(String relPath) throws KPFSException {
-		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath); 
+//		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath); 
+		File file = new File(relPath); 
 		byte[] byteArr = new byte[(int)file.length()];
 		FileInputStream fin = null;
 		try {

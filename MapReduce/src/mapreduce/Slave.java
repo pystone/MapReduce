@@ -41,7 +41,6 @@ public class Slave {
 
 	public int _sid;
 	public Socket _socket;
-	public Registry _registry;
 
 	// public KPFSStub _kpfs;
 
@@ -68,15 +67,15 @@ public class Slave {
 			KPFSSlaveInterface stub = (KPFSSlaveInterface) UnicastRemoteObject
 					.exportObject(obj, 0);
 
-			_registry = null;
+			Registry _registry = null;
 			try {
 				_registry = LocateRegistry
 						.getRegistry(GlobalInfo.sharedInfo().DataSlavePort);
 				_registry.list();
 			} catch (RemoteException e) {
-				System.err.println("Failed to open HDFS service!");
-				e.printStackTrace();
+				_registry = LocateRegistry.createRegistry(GlobalInfo.sharedInfo().DataSlavePort);
 			}
+				
 			_registry.bind("KPFSSlaveInterface", stub);
 
 			System.out.println("HDFS ready");

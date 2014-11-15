@@ -76,8 +76,8 @@ public class KPFSMaster implements KPFSMasterInterface {
 		
 		Random rand = new Random();
 		int idx = rand.nextInt(ips.size());	// load balancer entry point
-		
-		return ips.get(idx);
+		KPFSFileInfo kpfsfileinfo = ips.get(idx);
+		return kpfsfileinfo;
 	}
 	
 	@Override
