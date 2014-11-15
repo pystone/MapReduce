@@ -18,7 +18,8 @@ import mapreduce.GlobalInfo;
  *
  */
 public class KPFSSlave implements KPFSSlaveInterface {
-
+    public KPFSSlave() {}
+	
 	@Override
 	public String getFileString(String relPath) throws KPFSException {
 		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath);

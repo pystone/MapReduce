@@ -4,30 +4,26 @@
 package mapreduce;
 
 import hdfs.KPFSMaster;
-import hdfs.KPFileSplit;
+import hdfs.KPFSMasterInterface;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.UnknownHostException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Properties;
 import java.util.Scanner;
-import java.util.StringTokenizer;
 
 /**
  * @author PY
@@ -45,14 +41,23 @@ public class MapReduce {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		if (args.length == 0) {
-			System.out.println("Please provide config file name!");
-			System.exit(-1);
-		}
+//		if (args.length == 0) {
+//			System.out.println("Please provide config file name!");
+//			System.exit(-1);
+//		}
 //		start(args[0], args[1]);
+		System.out.println("(M)aster or (S)lave?");
+		Scanner in = new Scanner(System.in);
+		String line = in.nextLine();
+		String[] cmd = line.split("\\s+");
 		
-		
-		
+		String role = null;
+		if (cmd[0].contains("m")) {
+			role = "m";
+		} else if (cmd[0].contains("s")) {
+			role = "s";
+		}
+		start("config.txt", role);
 	}
 	
 	private static void start(String confFileName, String mstOrSlv) {
@@ -70,10 +75,12 @@ public class MapReduce {
 		
 		loadConfig(prop);
 		
-		if (mstOrSlv.equalsIgnoreCase("m") && GlobalInfo.sharedInfo().isMaster()) {
+//		if (mstOrSlv.equalsIgnoreCase("m") && GlobalInfo.sharedInfo().isMaster()) {
+		if (mstOrSlv.equalsIgnoreCase("m")) {
 			System.out.println("Master");
 			Master.sharedMaster().start();
-		} else if (mstOrSlv.equalsIgnoreCase("s") && GlobalInfo.sharedInfo().isSlave()) {
+//		} else if (mstOrSlv.equalsIgnoreCase("s") && GlobalInfo.sharedInfo().isSlave()) {
+		} else if (mstOrSlv.equalsIgnoreCase("s")) {
 			System.out.println("Slave");
 			Slave.sharedSlave().start();
 		} else {
@@ -96,7 +103,9 @@ public class MapReduce {
 			GlobalInfo.sharedInfo().Host2RootDir.put(slaves[i].trim(), slaverootdir[i].trim());
 		}
 		
+		
 		GlobalInfo.sharedInfo().FileChunkSizeB = Integer.parseInt(prop.getProperty("FileChunkSizeB"));
+		GlobalInfo.sharedInfo().NumberOfReducer = Integer.parseInt(prop.getProperty("NumberOfReducer"));
 		GlobalInfo.sharedInfo().MasterRootDir = prop.getProperty("MasterRootDir");
 		
 		GlobalInfo.sharedInfo().IntermediateDirName = prop.getProperty("IntermediateDirName");
@@ -118,19 +127,28 @@ public class MapReduce {
 	}
 	
 	// ====== test begin ======
-		private static void testSplit() {
+		private static void testSplit() throws RemoteException {
 			File file = new File("words.txt");
 			String dir = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf('/') + 1);
 			String fileName = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf("/") + 1);
 			System.out.println(dir);
 			System.out.println(fileName);
+		
+			Registry registry = null;
+			KPFSMasterInterface _kpfsMaster = null;
 			try {
-				ArrayList<String> files = KPFileSplit.split(file.getAbsolutePath(), 20, dir, fileName);
-				for (String fn: files) {
-					System.out.println(fn);
-				}
-			} catch (FileNotFoundException e) {
+				registry = LocateRegistry.getRegistry(
+						GlobalInfo.sharedInfo().DataMasterHost,
+						GlobalInfo.sharedInfo().DataMasterPort);
+				_kpfsMaster = (KPFSMasterInterface) registry
+						.lookup("KPFSMasterInterface");
+			} catch (RemoteException | NotBoundException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
+			}	
+			ArrayList<String> files = _kpfsMaster.splitFile(file.getAbsolutePath(), 20, dir, fileName);
+			for (String fn: files) {
+				System.out.println(fn);
 			}
 		}
 		private static void testMkdir() {

@@ -19,6 +19,18 @@ public class Pair implements Comparable, Serializable {
     private String first;
     private ArrayList<String> list;
     
+    public Pair(String line) {
+    	if(line == null) {
+    		return;
+    	}
+    	String[] parts = line.trim().split(":");
+    	this.first = parts[0];
+    	if(list == null) {
+    		list = new ArrayList<String>();
+    	}
+		list.add(parts[1]); 
+    }
+    
     public Pair(String key, String val) {
     	this.first = key;
     	if(list == null) {

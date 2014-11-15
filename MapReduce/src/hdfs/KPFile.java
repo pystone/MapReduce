@@ -26,8 +26,12 @@ public class KPFile {
 	public String _relDir = null;	// "taskName/*Files/"
 	public String _fileName = null;	// "taskName.part001"
 	
+	public KPFile(String relDir, String fileName) {
+		_relDir = relDir;
+		_fileName = fileName;
+	}
 	
-	public String getFileString() {
+	public String getFileString() throws RemoteException {
 		/* retrieve location information from data master */
 		KPFSMasterInterface masterService = getMasterService();
         KPFSFileInfo info = masterService.getFileLocation(getRelPath());
@@ -45,7 +49,7 @@ public class KPFile {
         return content;
 	}
 	
-	public byte[] getFileBytes() {
+	public byte[] getFileBytes() throws RemoteException {
 		KPFSMasterInterface masterService = getMasterService();
         KPFSFileInfo info = masterService.getFileLocation(getRelPath());
 		
@@ -133,7 +137,8 @@ public class KPFile {
 	public void saveFileLocally(byte[] byteArr, String localHost) throws IOException {
 		File file = new File(getLocalAbsPath());
 		file.getParentFile().mkdirs();
-		FileOutputStream outStream = new FileOutputStream(file);
+		
+		FileOutputStream outStream = new FileOutputStream(file, true);
 		outStream.write(byteArr);
 		outStream.close();
 		

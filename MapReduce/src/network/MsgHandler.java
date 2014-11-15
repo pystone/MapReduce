@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.Socket;
 
 import jobcontrol.JobInfo;
+import mapreduce.Master;
 import mapreduce.Slave;
 
 /**
@@ -38,10 +39,18 @@ public class MsgHandler extends Thread {
 					Slave.sharedSlave()._sid = ((Integer)(msg._content)).intValue();
 					System.out.println("Sid got: " + ((Integer)(msg._content)).intValue());
 					break;
-					
 				case NEW_JOB:
+					/* master -> slave */
 					Slave.sharedSlave().newJob((JobInfo)msg._content);
-				/* slave -> master */
+					break;
+				case MAP_COMPLETE:
+					/* slave -> master */
+					Master.sharedMaster().checkMapCompleted((JobInfo)msg._content);
+					break;
+				case REDUCE_COMPLETE:
+					/* slave -> master */
+					Master.sharedMaster().checkReduceCompleted((JobInfo)msg._content);
+					break;
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				connAlive = false;

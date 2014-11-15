@@ -7,6 +7,7 @@ SlaveRootDir = /tmp/mapreduce-pykl/unix2, /tmp/mapreduce-pykl/unix2, \
 			/tmp/mapreduce-pykl/unix4 
 
 FileChunkSizeB = 27
+NumberOfReducer= 3
 
 MasterRootDir = /tmp/mapreduce-pykl/master
 

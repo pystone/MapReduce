@@ -3,10 +3,6 @@
  */
 package jobcontrol;
 
-import hdfs.KPFSException;
-import hdfs.KPFile;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import mapreduce.Master;
@@ -15,14 +11,15 @@ import network.NetworkHelper;
 
 /**
  * @author PY
- *
+ * 
  */
-public class JobDispatcher extends Thread{
+public class JobDispatcher extends Thread {
 	JobManager _sharedManager = null;
+
 	public JobDispatcher(JobManager manager) {
 		_sharedManager = manager;
 	}
-	
+
 	public void run() {
 		while (true) {
 			if (_sharedManager.isSendingQueueEmpty() == true) {
@@ -37,7 +34,8 @@ public class JobDispatcher extends Thread{
 			msg._source = 0;
 			msg._content = job;
 			try {
-				NetworkHelper.send(Master.sharedMaster()._slvSocket.get(job._sid), msg);
+				NetworkHelper.send(
+						Master.sharedMaster()._slvSocket.get(job._sid), msg);
 			} catch (IOException e) {
 				// TODO: error handle!
 				e.printStackTrace();

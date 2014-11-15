@@ -3,16 +3,24 @@
  */
 package mapreduce;
 
-import hdfs.KPFileSplit;
+import hdfs.KPFSMaster;
+import hdfs.KPFSMasterInterface;
+import hdfs.KPFile;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.rmi.AlreadyBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -48,7 +56,29 @@ public class Master {
 		l.start();
 	}
 
+	private KPFSMaster _kpfsMaster;
+
 	public void start() {
+		/* start HDFS */
+		_kpfsMaster = new KPFSMaster();
+		try {
+			KPFSMasterInterface stub = (KPFSMasterInterface) UnicastRemoteObject
+					.exportObject(_kpfsMaster, 0);
+			Registry registry = null;
+			try {
+				registry = LocateRegistry
+						.getRegistry(GlobalInfo._sharedInfo.DataMasterPort);
+				registry.list();
+			} catch (RemoteException e) {
+				registry = LocateRegistry.createRegistry(1099);
+			}
+			registry.bind("KPFSMasterInterface", stub);
+
+			System.out.println("KPFS master ready");
+		} catch (RemoteException | AlreadyBoundException e) {
+			e.printStackTrace();
+		}
+
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
 			String line = null;
@@ -84,15 +114,16 @@ public class Master {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
+
+	private Task currentTask = null;
+	private HashMap<Integer, Boolean> mapCheckList = new HashMap<Integer, Boolean>();
+	private HashMap<Integer, Boolean> reduceCheckList = new HashMap<Integer, Boolean>();
 
 	public void newTask(String inputFile, String mapperPath,
 			String reducerPath, String taskName) {
 		int taskId = _taskId.incrementAndGet();
-		Task task = new Task(taskId);
-		task._mapperPath = mapperPath;
-		task._reducerPath = reducerPath;
+		currentTask = new Task(taskId, taskName);
 
 		String dirPath = inputFile.substring(0, inputFile.lastIndexOf('/') + 1);
 		String fileName = inputFile.substring(inputFile.lastIndexOf("/") + 1);
@@ -107,24 +138,77 @@ public class Master {
 		(new File(chunkDir)).mkdirs();
 		(new File(resultDir)).mkdirs();
 
-		// copy files from HDFS
+		ArrayList<String> files = _kpfsMaster.splitFile(inputFile,
+				GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
+		int jobId = 0;
+		for (String fn : files) {
+			JobInfo job = new JobInfo(++jobId, taskName);
+			job._taskId = taskId;
+			job._sid = getFreeSlave();
+			job._type = JobInfo.JobType.MAP;
 
-		try {
-			ArrayList<String> files = KPFileSplit.split(inputFile,
-					GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
-			int jobid = 0;
-			for (String fn : files) {
-				JobInfo job = new JobInfo(++jobid, taskName);
-				job._taskId = taskId;
-				job._sid = getFreeSlave();
-				job._type = JobInfo.JobType.MAP;
+			ArrayList<KPFile> list = new ArrayList<KPFile>();
+			list.add(new KPFile(chunkDir, fn));
+			job._inputFile = list;
 
-				task._jobs.put(jobid, job);
+			currentTask._jobs.put(jobId, job);
+			mapCheckList.put(jobId, false);
+		}
+
+		JobManager.sharedJobManager().sendJobs(currentTask._jobs.values());
+	}
+
+	public void checkMapCompleted(JobInfo job) {
+		boolean isMapCompleted = true;
+		if (mapCheckList != null) {
+			mapCheckList.put(job._jobId, true);
+
+			Iterator<Map.Entry<Integer, Boolean>> itor = mapCheckList
+					.entrySet().iterator();
+			while (itor.hasNext()) {
+				Map.Entry<Integer, Boolean> entry = (Map.Entry<Integer, Boolean>) itor
+						.next();
+				boolean flag = (boolean) entry.getValue();
+				if (!flag) {
+					isMapCompleted = false;
+				}
 			}
+		}
 
-			JobManager.sharedJobManager().sendJobs(task._jobs.values());
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+		if (isMapCompleted) {
+			int jobId = 0;
+			for (int i = 0; i < GlobalInfo.sharedInfo().NumberOfReducer; i++) {
+				JobInfo reduceJob = new JobInfo(++jobId, currentTask._taskName);
+				reduceJob._taskId = currentTask._taskId;
+				reduceJob._sid = getFreeSlave();
+				reduceJob._type = JobInfo.JobType.REDUCE;
+				reduceJob._inputFile = job._outputFile;
+				currentTask._jobs.put(jobId, job);
+				reduceCheckList.put(jobId, false);
+			}
+			JobManager.sharedJobManager().sendJobs(currentTask._jobs.values());
+		}
+	}
+
+	public void checkReduceCompleted(JobInfo job) {
+		boolean isReduceCompleted = true;
+		if (reduceCheckList != null) {
+			reduceCheckList.put(job._jobId, true);
+
+			Iterator<Map.Entry<Integer, Boolean>> itor = reduceCheckList
+					.entrySet().iterator();
+			while (itor.hasNext()) {
+				Map.Entry<Integer, Boolean> entry = (Map.Entry<Integer, Boolean>) itor
+						.next();
+				boolean flag = (boolean) entry.getValue();
+				if (!flag) {
+					isReduceCompleted = false;
+				}
+			}
+		}
+
+		if (isReduceCompleted) {
+			System.out.println("Task is completed!");
 		}
 	}
 
@@ -135,5 +219,4 @@ public class Master {
 		Integer sid = (Integer) _slvSocket.keySet().toArray()[slv];
 		return sid.intValue();
 	}
-
 }

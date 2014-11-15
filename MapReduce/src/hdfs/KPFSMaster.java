@@ -3,6 +3,10 @@
  */
 package hdfs;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -11,18 +15,55 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Scanner;
 
 /**
  * @author PY
  *
  */
 public class KPFSMaster implements KPFSMasterInterface {
+	public KPFSMaster() {}
 
 	private HashMap<String, ArrayList<KPFSFileInfo>> _mapTbl = new HashMap<String, ArrayList<KPFSFileInfo>>(); 
 	
-	public ArrayList<String> splitFile(String path) {
-		// split file and dispatch them into other nodes
-		// return the id of that file (the relative path of those files, like "taskName/InputFiles/taskName.part001")
+	@Override
+	public ArrayList<String> splitFile(String filePath, int chunkSizeB,
+			String directory, String fileName) {
+		try {
+			File file = new File(filePath);
+			Scanner scan = new Scanner(file);
+			ArrayList<String> smallFiles = new ArrayList<String>();
+			String curFile = "";
+			String curLine = "";
+			int partCnt = 0;
+
+			while (scan.hasNextLine()) {
+				for (; scan.hasNextLine() && curFile.length() < chunkSizeB;) {
+					curLine = scan.nextLine();
+					curFile += curLine + '\n';
+				}
+
+				String curFileName = directory + fileName + ".part"
+						+ String.format("%03d", partCnt++);
+				File outFile = new File(curFileName);
+				FileOutputStream outStream = new FileOutputStream(outFile);
+				try {
+					outStream.write(curFile.getBytes());
+					outStream.close();
+				} catch (IOException e) {
+					System.out.println("Failed to write chunk file!");
+					e.printStackTrace();
+				}
+
+				smallFiles.add(curFileName);
+
+				/* release the memory */
+				curFile = curLine = "";
+			}
+			return smallFiles;
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 		return null;
 	}
 	
@@ -65,32 +106,4 @@ public class KPFSMaster implements KPFSMasterInterface {
 			}
 		}
 	}
-	
-	public static void start(int port) {
-		try {
-			KPFSMaster obj = new KPFSMaster();
-			KPFSMasterInterface stub = (KPFSMasterInterface) UnicastRemoteObject.exportObject(obj, 0);
-
-            // Bind the remote object's stub in the registry
-            Registry registry = null;
-            try {
-                registry = LocateRegistry.getRegistry(port);//use any no. less than 55000
-                registry.list();
-                // This call will throw an exception if the registry does not already exist
-            }
-            catch (RemoteException e) { 
-                registry = LocateRegistry.createRegistry(1099);
-            }
-            registry.bind("KPFSMasterInterface", stub);
-
-            System.out.println("KPFS master ready");
-        } catch (Exception e) {
-            System.err.println("Server exception: " + e.toString());
-            e.printStackTrace();
-        }
-	}
-
-	
-
-	
 }

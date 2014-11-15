@@ -3,8 +3,6 @@
  */
 package jobcontrol;
 
-import java.awt.List;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;

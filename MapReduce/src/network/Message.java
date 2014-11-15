@@ -15,7 +15,9 @@ public class Message implements Serializable {
 	public enum MessageType {
 		HELLO,
 		NEW_JOB,
-		JOB_COMPLETE
+		MAP_COMPLETE,
+		REDUCE_COMPLETE,
+//		JOB_COMPLETE
 	};
 	
 	public MessageType _type;
