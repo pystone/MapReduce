@@ -29,3 +29,5 @@ MapReduce/bin/mapreduce/Slave.class
 MapReduce/bin/network/Listen.class
 
 MapReduce/bin/network/MsgHandler.class
+
+*.class
