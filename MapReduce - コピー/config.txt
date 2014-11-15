@@ -1,5 +1,0 @@
-MasterPort = 15100
-SlavePort = 15101
-MasterHost = ymac.wv.cc.cmu.edu
-SlaveHosts = unix2.andrew.cmu.edu, unix3.andrew.cmu.edu, \
-			unix4.andrew.cmu.edu
