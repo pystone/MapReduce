@@ -17,8 +17,7 @@ public class GlobalInfo {
 	// For map-reduce
 	public int MasterPort = 7888;
 	public int SlavePort = 8999;
-//	public String MasterHost = "128.237.162.33";
-	public String MasterHost = "128.237.191.22";
+	public String MasterHost = "128.237.162.33";
 	public HashMap<Integer, String> SID2Host = new HashMap<Integer, String>();
 	
 	// For KPFS

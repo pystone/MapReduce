@@ -1,6 +1,6 @@
 MasterPort = 15100
 SlavePort = 15101
-MasterHost = ymac.wv.cc.cmu.edu
+MasterHost = 128.237.191.22
 SlaveHosts = unix2.andrew.cmu.edu, unix3.andrew.cmu.edu, \
 			unix4.andrew.cmu.edu
 SlaveRootDir = /tmp/mapreduce-pykl/unix2, /tmp/mapreduce-pykl/unix2, \
