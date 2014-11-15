@@ -17,14 +17,14 @@ public class GlobalInfo {
 	// For map-reduce
 	public int MasterPort = 7888;
 	public int SlavePort = 8999;
-	public String MasterHost = "128.237.162.33";
+	public String MasterHost = "73.52.255.101";
 	public HashMap<Integer, String> SID2Host = new HashMap<Integer, String>();
 	
 	// For KPFS
 	public int FileChunkSizeB = 27;
 	public int NumberOfReducer = 3;
 	
-	public String MasterRootDir = "/tmp/mapreduce/";
+	public String MasterRootDir = "/tmp/";
 	
 	public String IntermediateDirName = "IntermediateFiles";
 	public String ChunkDirName = "ChunkInputFiles";
@@ -33,7 +33,7 @@ public class GlobalInfo {
 	public String JarFilePath = "jar";
 	public String JarFileName = "WordCounter.jar";
 	
-	public String DataMasterHost = "128.237.162.33";
+	public String DataMasterHost = "73.52.255.101";
 	public int DataMasterPort = 9987;
 	public int DataSlavePort = 9986;
 	
@@ -54,10 +54,18 @@ public class GlobalInfo {
 	}
 	
 	public String getSlaveHostBySID(int sid) {
-		return SID2Host.get(sid);
+		String ret = SID2Host.get(sid);
+		if(ret == null) {
+			return "";
+		}
+		return ret;
 	}
 	public String getRootDirByHost(String host) {
-		return Host2RootDir.get(host);
+		String ret = Host2RootDir.get(host);
+		if(ret == null) {
+			return "";
+		}
+		return ret;
 	}
 	
 	public String getLocalRootDir() {

@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Paths;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -100,50 +101,15 @@ public class KPFile implements Serializable {
 		return slaveService;
 	}
 
-	// private File _file = null;
-	// private Scanner _scan = null;
-	//
-	//
-	// public void open() throws FileNotFoundException, KPFSException {
-	// if (_relDir == null || _fileName == null) {
-	// System.out.println("The path or file name is not set!");
-	// throw new KPFSException("The path or file name is not set!");
-	// } else {
-	// _file = new File(getAbsPath());
-	// _scan = new Scanner(_file);
-	// }
-	// }
-	//
 	public String getRelPath() {
 		return _relDir + "/" + _fileName;
 	}
 
-	//
 	public String getLocalAbsPath() {
-		return GlobalInfo.sharedInfo().getLocalRootDir() + getRelPath();
+//		return GlobalInfo.sharedInfo().getLocalRootDir() + getRelPath();
+		return getRelPath();
 	}
 
-	//
-	// public byte[] getByte() throws IOException {
-	// byte[] byteArr = new byte[(int)_file.length()];
-	// FileInputStream fin = new FileInputStream(_file);
-	// BufferedInputStream bin = new BufferedInputStream(fin);
-	// bin.read(byteArr, 0, byteArr.length);
-	// bin.close();
-	// fin.close();
-	// return byteArr;
-	// }
-	//
-	// public String getString() throws FileNotFoundException {
-	// Scanner exp = new Scanner(_file);
-	// String str = "";
-	// while (exp.hasNextLine()) {
-	// str += exp.nextLine() + '\n';
-	// }
-	// exp.close();
-	// return str;
-	// }
-	//
 	public void saveFileLocally(byte[] byteArr, String localHost)
 			throws IOException {
 		File file = new File(getLocalAbsPath());
@@ -151,11 +117,12 @@ public class KPFile implements Serializable {
 
 		FileOutputStream outStream = new FileOutputStream(file, true);
 		outStream.write(byteArr);
+		outStream.write("\n".getBytes());
 		outStream.close();
 
 		KPFSMasterInterface masterService = getMasterService();
 		masterService.addFileLocation(getRelPath(), localHost,
-				(int) file.length());
+				file.length());
 	}
 	//
 }

@@ -15,6 +15,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import mapreduce.GlobalInfo;
@@ -38,9 +39,12 @@ public class JobInfo implements Serializable {
 	public int _sid = 0;
 	public JobType _type = JobInfo.JobType.NONE;
 	public KPFile _mrFile = null;
-	public ArrayList<KPFile> _inputFile = null;
-	public ArrayList<KPFile> _outputFile = null;
+	public ArrayList<KPFile> _inputFile = new ArrayList<KPFile>();
+	public ArrayList<KPFile> _outputFile = new ArrayList<KPFile>();
 	public String _taskName = "";
+	
+	public HashMap<String, KPFile> interMap = new HashMap<String, KPFile>();
+	public HashMap<String, KPFile> resultMap = new HashMap<String, KPFile>();
 
 	public JobInfo(int jobId, String taskName) {
 		_jobId = jobId;
@@ -51,15 +55,18 @@ public class JobInfo implements Serializable {
 		byte[] jarByte = _mrFile.getFileBytes();
 		MRBase mrins = null;
 		try {
-//			Class cls = new ClassLoader().defineClass(_taskName, jarByte, 0, jarByte.length);
-			File file = File.createTempFile(_taskName, null);
-			file.deleteOnExit();
-			FileOutputStream bout = new FileOutputStream(file);
+//			File file = File.createTempFile(_taskName, null);
+//			file.deleteOnExit();
+			FileOutputStream bout = new FileOutputStream(_taskName);
 			bout.write(jarByte);
 			bout.close();
-			URL url = file.toURL();
+			
+			File file = new File(_taskName);
+			
+			URL url = file.toURL();  
 			URL[] urls = new URL[]{url};
-			Class cls = (new URLClassLoader(urls)).loadClass(_taskName);
+			ClassLoader cl = new URLClassLoader(urls);	
+			Class cls = cl.loadClass(_taskName);
 
 			Constructor mapConstr = cls.getConstructor();
 			mrins = (MRBase) mapConstr.newInstance();
@@ -105,8 +112,13 @@ public class JobInfo implements Serializable {
 
 		for (KPFile kpfile : _inputFile) {
 			String fileStr = kpfile.getFileString();
-			Pair pair = new Pair(fileStr);
-			ret.emit(pair);
+			if(fileStr.contains("\n")) {
+				String[] parts = fileStr.split("\n");
+				for(String part : parts) {
+					Pair pair = new Pair(part);
+					ret.emit(pair);
+				}
+			}
 		}
 		return ret;
 	}
@@ -117,7 +129,7 @@ public class JobInfo implements Serializable {
 					.println("WARNING: try to save intermediate pair for reduce job!");
 			return;
 		}
-
+		
 		// encode intermediate pairs into a string
 		try {
 			Iterator<Pair> itor = interFile.getInitialIterator();
@@ -125,14 +137,22 @@ public class JobInfo implements Serializable {
 				Pair pair = itor.next();
 				int hash = (pair.getFirst().hashCode() & Integer.MAX_VALUE)
 						% GlobalInfo.sharedInfo().NumberOfReducer;
-				String interDir = _taskName + "/"
-						+ GlobalInfo.sharedInfo().IntermediateDirName;
+		
+				String interDir = GlobalInfo.sharedInfo().IntermediateDirName;
 				String fileName = _taskName + ".inter"
 						+ String.format("%03d", hash);
-
-				KPFile kpfile = new KPFile(interDir, fileName);
+				
+				String path = interDir + "/" + fileName;
+				KPFile kpfile = null;
+				if(interMap.containsKey(path)) {
+					kpfile = interMap.get(path);
+				} else {
+					kpfile = new KPFile(interDir, fileName);
+					_outputFile.add(kpfile);
+					interMap.put(path, kpfile);
+				}
+				
 				kpfile.saveFileLocally(pair.toString().getBytes(), localHost);
-				_outputFile.add(kpfile);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -148,17 +168,25 @@ public class JobInfo implements Serializable {
 		// encode result pairs into a string
 		try {
 			Iterator<Pair> itor = resultFile.getInitialIterator();
-			int count = 0;
+//			int count = 0;
 			while (itor.hasNext()) {
 				Pair pair = itor.next();
-				String interDir = _taskName + "/"
-						+ GlobalInfo.sharedInfo().ResultDirName;
-				String fileName = _taskName + ".result"
-						+ String.format("%03d", count++);
+				String interDir = GlobalInfo.sharedInfo().ResultDirName;
+//				String fileName = _taskName + ".result"
+//						+ String.format("%03d", count++);
+				String fileName = _taskName + ".result";
 
-				KPFile kpfile = new KPFile(interDir, fileName);
+				String path = interDir + "/" + fileName;
+				KPFile kpfile = null;
+				if(resultMap.containsKey(path)) {
+					kpfile = resultMap.get(path);
+				} else {
+					kpfile = new KPFile(interDir, fileName);
+					_outputFile.add(kpfile);
+					resultMap.put(path, kpfile);
+				}
+				
 				kpfile.saveFileLocally(pair.toString().getBytes(), localHost);
-				_outputFile.add(kpfile);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

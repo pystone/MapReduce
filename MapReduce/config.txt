@@ -1,22 +1,22 @@
-MasterPort = 15100
-SlavePort = 15101
-MasterHost = 128.237.191.22
+MasterPort = 10000
+SlavePort = 10001
+MasterHost = localhost
 SlaveHosts = unix2.andrew.cmu.edu, unix3.andrew.cmu.edu, \
 			unix4.andrew.cmu.edu
-SlaveRootDir = /tmp/mapreduce-pykl/unix2, /tmp/mapreduce-pykl/unix2, \
-			/tmp/mapreduce-pykl/unix4 
+SlaveRootDir = /tmp/unix2, /tmp/unix2, \
+			/tmp/unix4 
 
-FileChunkSizeB = 27
-NumberOfReducer= 3
+FileChunkSizeB = 10000000
+NumberOfReducer= 1
 
-MasterRootDir = /tmp/mapreduce-pykl/master
+MasterRootDir = /tmp/master
 
 IntermediateDirName = IntermediateFiles
 ChunkDirName = ChunkInputFiles
 ResultDirName = ResultFiles
 
-DataMasterHost = 128.237.191.22
-DataMasterPort = 16100
-DataSlavePort = 16101
+DataMasterHost = localhost
+DataMasterPort = 4000
+DataSlavePort = 5000
 
 

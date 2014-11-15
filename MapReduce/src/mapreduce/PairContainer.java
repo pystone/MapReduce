@@ -113,39 +113,39 @@ public class PairContainer implements Serializable {
 	}
 	
 	// PairContainer => key1:value1,value2,value3;key2:value1,value2,value3;
-		public String toString() {
-			StringBuilder sb = new StringBuilder();
-			Iterator<Pair> itor = queue.iterator();
-			int i = 0;
-			while(itor.hasNext()) {
-				Pair pair = itor.next();
-				if(i > 0) {
-					sb.append(";");
-				}
-				sb.append(pair.toString());
-				i++;
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		Iterator<Pair> itor = queue.iterator();
+		int i = 0;
+		while(itor.hasNext()) {
+			Pair pair = itor.next();
+			if(i > 0) {
+				sb.append(";");
 			}
-			return sb.toString();
+			sb.append(pair.toString());
+			i++;
 		}
-		
-		// key1:value1,value2,value3;key2:value1,value2,value3; => PairContainer 
-		public void restoreFromString(String str) {
-			if(str == null) {
-				return;
-			}
-			String[] pairStrs = str.split(";");
-			for(String pairStr : pairStrs) { 
-				String[] parts = pairStr.split(":");
-				String key = parts[0];
-				String valueList = parts[1];
-				if(valueList != null) {
-					String[] values = parts[1].split(",");
-					for(String value : values) {
-						Pair pair = new Pair(key, value);
-						queue.offer(pair);
-					}
+		return sb.toString();
+	}
+	
+	// key1:value1,value2,value3;key2:value1,value2,value3; => PairContainer 
+	public void restoreFromString(String str) {
+		if(str == null) {
+			return;
+		}
+		String[] pairStrs = str.split(";");
+		for(String pairStr : pairStrs) { 
+			String[] parts = pairStr.split(":");
+			String key = parts[0];
+			String valueList = parts[1];
+			if(valueList != null) {
+				String[] values = parts[1].split(",");
+				for(String value : values) {
+					Pair pair = new Pair(key, value);
+					queue.offer(pair);
 				}
 			}
-			mergeSameKey();
 		}
+		mergeSameKey();
+	}
 }

@@ -1,6 +1,7 @@
-// package example
+//package example;
 
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 import mapreduce.MRBase;
@@ -12,25 +13,22 @@ public class WordCounter implements MRBase {
 	public void reduce(String key, Iterator<String> values,
 			PairContainer output) {
 		System.out.println("This is reduce method." + key);
-//		Integer sum = 0;
-//		while (values.hasNext()) {
-//			sum += Integer.parseInt(values.next());
-//		}
-//		output.emit(key, sum.toString());
+		Integer sum = 0;
+		while (values.hasNext()) {
+			sum += Integer.parseInt(values.next());
+		}
+		output.emit(key, sum.toString());
 		
 	}
 	@Override
 	public void map(String key, String value,
 			PairContainer output) {
-		System.out.println("This is map method??? " + key);
+		System.out.println("This is map method. " + key);
 		
-//		StringTokenizer tokenizer = new StringTokenizer(value);
-//		while (tokenizer.hasMoreTokens()) {
-//			output.emit(tokenizer.nextToken(), "1");
-//			System.out.println(tokenizer.nextToken());
-//		}
-	}
-
-
-	
+		Scanner scan = new Scanner(value);
+		scan.useDelimiter("\r\n");
+		while(scan.hasNext()) {
+			output.emit(scan.next(), "1");
+		}
+	}	
 }

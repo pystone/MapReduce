@@ -141,7 +141,7 @@ public class Master {
 		(new File(resultDir)).mkdirs();
 		
 		File jar = new File(GlobalInfo.sharedInfo().JarFilePath, GlobalInfo.sharedInfo().JarFileName);
-		_kpfsMaster.addFileLocation(mapperPath, GlobalInfo.sharedInfo().DataMasterHost, (int)jar.length());
+		_kpfsMaster.addFileLocation(mapperPath, GlobalInfo.sharedInfo().DataMasterHost, jar.length());
 		
 		ArrayList<String> files = _kpfsMaster.splitFile(inputFile,
 				GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
@@ -154,7 +154,10 @@ public class Master {
 			job._type = JobInfo.JobType.MAP;
 
 			ArrayList<KPFile> list = new ArrayList<KPFile>();
-			list.add(new KPFile(chunkDir, fn));
+			if(fn.contains("/")) {
+				String[] parts = fn.split("/");
+				list.add(new KPFile(parts[0], parts[1]));
+			}
 			job._inputFile = list;
 
 			currentTask._jobs.put(jobId, job);
@@ -190,7 +193,7 @@ public class Master {
 				reduceJob._sid = getFreeSlave();
 				reduceJob._type = JobInfo.JobType.REDUCE;
 				reduceJob._inputFile = job._outputFile;
-				currentTask._jobs.put(jobId, job);
+				currentTask._jobs.put(jobId, reduceJob);
 				reduceCheckList.put(jobId, false);
 			}
 			JobManager.sharedJobManager().sendJobs(currentTask._jobs.values());

@@ -17,6 +17,8 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Scanner;
 
+import mapreduce.GlobalInfo;
+
 /**
  * @author PY
  *
@@ -56,6 +58,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 				}
 
 				smallFiles.add(curFileName);
+				addFileLocation(curFileName, GlobalInfo.sharedInfo().DataMasterHost, outFile.length());
 
 				/* release the memory */
 				curFile = curLine = "";
@@ -81,7 +84,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 	}
 	
 	@Override
-	public boolean addFileLocation(String relPath, String addr, int size) {
+	public boolean addFileLocation(String relPath, String addr, long size) {
 		ArrayList<KPFSFileInfo> ips = _mapTbl.get(relPath);
 		if (ips == null) {
 			ips = new ArrayList<KPFSFileInfo>();

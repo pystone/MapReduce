@@ -11,13 +11,13 @@ import java.io.Serializable;
  */
 public class KPFSFileInfo implements Serializable {
 	public String _host = "";
-	public int _size = 0;
+	public long _size = 0;
 	
 	public KPFSFileInfo() {
 		
 	}
 	
-	public KPFSFileInfo(String host, int size) {
+	public KPFSFileInfo(String host, long size) {
 		_host = host;
 		_size = size;
 	}

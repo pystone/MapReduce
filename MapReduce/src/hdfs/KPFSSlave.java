@@ -22,7 +22,8 @@ public class KPFSSlave implements KPFSSlaveInterface {
 	
 	@Override
 	public String getFileString(String relPath) throws KPFSException {
-		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath);
+//		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath);
+		File file = new File(relPath);
 		Scanner exp = null;
 		try {
 			exp = new Scanner(file);
