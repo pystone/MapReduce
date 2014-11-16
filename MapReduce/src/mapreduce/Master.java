@@ -156,7 +156,7 @@ public class Master {
 			ArrayList<KPFile> list = new ArrayList<KPFile>();
 			if(fn.contains("/")) {
 				String[] parts = fn.split("/");
-				list.add(new KPFile(parts[0], parts[1]));
+				list.add(new KPFile(chunkDir.substring(0, chunkDir.length() - 1), parts[parts.length - 1]));
 			}
 			job._inputFile = list;
 

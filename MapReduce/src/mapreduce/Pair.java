@@ -1,7 +1,5 @@
 package mapreduce;
-/**
- * 
- */
+
 
 
 import java.io.Serializable;
@@ -50,31 +48,31 @@ public class Pair implements Comparable, Serializable {
     	}
     }
     
-    public int hashCode() {
-    	int hashFirst = first != null ? first.hashCode() : 0;
-    	
-    	int hashSecond = 0;
-    	for(String str : list) {
-    		hashSecond += str.hashCode();
-    	}
+//    public int hashCode() {
+//    	int hashFirst = first != null ? first.hashCode() : 0;
+//    	
+//    	int hashSecond = 0;
+//    	for(String str : list) {
+//    		hashSecond += str.hashCode();
+//    	}
+//
+//    	return (hashFirst + hashSecond);
+//    }
 
-    	return (hashFirst + hashSecond) * hashSecond + hashFirst;
-    }
-
-    public boolean equals(Object other) {
-    	if (other instanceof Pair) {
-    		Pair otherPair = (Pair) other;
-    		return 
-    		((  this.first == otherPair.first ||
-    			( this.first != null && otherPair.first != null &&
-    			  this.first.equals(otherPair.first))) &&
-    		 (	this.list == otherPair.list ||
-    			( this.list != null && otherPair.list != null &&
-    			  this.list.equals(otherPair.list))) );
-    	}
-
-    	return false;
-    }
+//    public boolean equals(Object other) {
+//    	if (other instanceof Pair) {
+//    		Pair otherPair = (Pair) other;
+//    		return 
+//    		((  this.first == otherPair.first ||
+//    			( this.first != null && otherPair.first != null &&
+//    			  this.first.equals(otherPair.first))) &&
+//    		 (	this.list == otherPair.list ||
+//    			( this.list != null && otherPair.list != null &&
+//    			  this.list.equals(otherPair.list))) );
+//    	}
+//
+//    	return false;
+//    }
 
     public String toString()
     { 
@@ -109,10 +107,13 @@ public class Pair implements Comparable, Serializable {
 
 	@Override
 	public int compareTo(Object other) {
-		if (other instanceof Pair) {
-			Pair target = (Pair)other;
-			return getFirst().compareTo(target.getFirst());
+		Pair target = (Pair)other;
+		if(getFirst().compareTo(target.getFirst()) > 0) {
+			return 1;
+		} else if(getFirst().compareTo(target.getFirst()) < 0) {
+			return -1;
+		} else {
+			return 0;
 		}
-		return -1;
 	}
 }

@@ -3,8 +3,6 @@
  */
 package mapreduce;
 
-import hdfs.KPFSException;
-import hdfs.KPFSMasterInterface;
 import hdfs.KPFSSlave;
 import hdfs.KPFSSlaveInterface;
 
@@ -12,12 +10,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.file.StandardCopyOption;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import jobcontrol.JobInfo;
@@ -125,12 +122,30 @@ public class Slave {
 		PairContainer resultPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 		PairContainer interPairs = job.getInterPairs();
+		System.out.println(interPairs.toString());
 		Iterator<Pair> iter = interPairs.getInitialIterator();
 
-		for (; iter.hasNext();) {
-			Pair cur = iter.next();
+		while(iter.hasNext()) {
+			Pair pair = iter.next();
+			String key = pair.getFirst();
+			Iterator<String> second = pair.getSecond();
+			StringBuilder sb = new StringBuilder();
+			while(second.hasNext()){
+				sb.append(second.next());
+			}
+			ArrayList<String> list = new ArrayList<String>();
+			if(sb.toString().contains(",")) {
+				String[] parts = sb.toString().split(",");
+				for(String part : parts) {
+					list.add(part);
+				}
+			} else {
+				list.add(sb.toString());
+			}
+			Iterator<String> value = list.iterator();
+			
 			try {
-				ins.reduce(cur.getFirst(), cur.getSecond(), resultPairs);
+				ins.reduce(key, value, resultPairs);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
