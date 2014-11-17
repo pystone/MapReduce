@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import jobcontrol.JobInfo;
 import jobcontrol.JobManager;
 import jobcontrol.Task;
+import jobcontrol.UnfinishedJobs;
 import network.Listen;
 import network.Message;
 import network.NetworkHelper;
@@ -47,39 +48,49 @@ public class Master {
 		return _sharedMaster;
 	}
 
-	private volatile AtomicInteger _sid = null;
-	private volatile AtomicInteger _taskId = null;
 	public HashMap<Integer, Socket> _slvSocket = new HashMap<Integer, Socket>();
+	public volatile HashMap<String, Task> _tasks = new HashMap<String, Task>();
+	private volatile UnfinishedJobs _unfinishedMap = new UnfinishedJobs();
+	private volatile UnfinishedJobs _unfinishedReduce = new UnfinishedJobs();
+
 
 	private Master() {
-		_sid = new AtomicInteger(0);
-		_taskId = new AtomicInteger(0);
+		GlobalInfo.sharedInfo()._sid = 0;
 		Listen l = new Listen(GlobalInfo.sharedInfo().MasterPort);
 		l.start();
 	}
 
-	private KPFSMaster _kpfsMaster;
+	private KPFSMasterInterface _kpfsMaster;
+	private KPFSSlaveInterface _kpfsSlave;
 	
 	public void start() {
-		/* start HDFS */
-		_kpfsMaster = new KPFSMaster();
+		/* start HDFS as master node*/
 		try {
-			KPFSMasterInterface stub = (KPFSMasterInterface) UnicastRemoteObject
-					.exportObject(_kpfsMaster, 0);
-			Registry registry = null;
-			try {
-				registry = LocateRegistry
-						.getRegistry(GlobalInfo.sharedInfo().DataMasterPort);
-				registry.list();
-			} catch (RemoteException e) {
-				registry = LocateRegistry.createRegistry(GlobalInfo.sharedInfo().DataMasterPort);
-			}
-			registry.bind("KPFSMasterInterface", stub);
-
-			System.out.println("KPFS master ready");
-		} catch (RemoteException | AlreadyBoundException e) {
-			e.printStackTrace();
-		}
+			_kpfsMaster = new KPFSMaster();
+            KPFSMasterInterface stub = (KPFSMasterInterface) UnicastRemoteObject.exportObject(_kpfsMaster, 
+            		GlobalInfo.sharedInfo().DataMasterPort);
+            Registry registry = LocateRegistry.createRegistry(GlobalInfo.sharedInfo().DataMasterPort);;
+            registry.rebind("DataMaster", stub);
+            System.out.println("KPFS master ready");
+        } catch (Exception e) {
+            System.err.println("Failed to establish as HDFS master!");
+            e.printStackTrace();
+            System.exit(-1);
+        }
+		
+		/* start HDFS as data node */
+		try {
+			_kpfsSlave = new KPFSSlave();
+            KPFSSlaveInterface stub = (KPFSSlaveInterface) UnicastRemoteObject.exportObject(_kpfsSlave, 
+            		GlobalInfo.sharedInfo().DataSlavePort);
+            Registry registry = LocateRegistry.createRegistry(GlobalInfo.sharedInfo().getDataSlavePort(0));;
+            registry.rebind("DataSlave", stub);
+            System.out.println("KPFS data node ready");
+        } catch (Exception e) {
+            System.err.println("Failed to establish as HDFS master!");
+            e.printStackTrace();
+            System.exit(-1);
+        }
 		
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
@@ -99,13 +110,14 @@ public class Master {
 	public void inputHandler(String[] cmd) {
 		switch (cmd[0]) {
 		case "new":
-			newTask(cmd[1], cmd[2], cmd[3], cmd[4]);
+			newTask(cmd[1]);
 			break;
 		}
 	}
 
+	// TODO: not sending sid!
 	public void newSlave(Socket socket) {
-		int sid = _sid.incrementAndGet();
+		int sid = 1;
 		_slvSocket.put(sid, socket);
 
 		Message hello = new Message();
@@ -118,21 +130,15 @@ public class Master {
 		}
 	}
 
-	private Task currentTask = null;
-	private HashMap<Integer, Boolean> mapCheckList = new HashMap<Integer, Boolean>();
-	private HashMap<Integer, Boolean> reduceCheckList = new HashMap<Integer, Boolean>();
+	public void newTask(String taskName) {
+		Task currentTask = new Task(taskName);
+		_tasks.put(taskName, currentTask);
 
-	public void newTask(String inputFile, String mapperPath,
-			String reducerPath, String taskName) {
-		int taskId = _taskId.incrementAndGet();
-		currentTask = new Task(taskId, taskName);
-
-		String dirPath = inputFile.substring(0, inputFile.lastIndexOf('/') + 1);
-		String fileName = inputFile.substring(inputFile.lastIndexOf("/") + 1);
-		String interDir = dirPath + GlobalInfo.sharedInfo().IntermediateDirName
+		String rootDir = GlobalInfo.sharedInfo().MasterRootDir;
+		String interDir = rootDir + taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName
 				+ "/";
-		String chunkDir = dirPath + GlobalInfo.sharedInfo().ChunkDirName + "/";
-		String resultDir = dirPath + GlobalInfo.sharedInfo().ResultDirName
+		String chunkDir = rootDir + taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/";
+		String resultDir = rootDir + taskName + "/" + GlobalInfo.sharedInfo().ResultDirName
 				+ "/";
 
 		/* create the folder to store intermediate files */
@@ -140,86 +146,117 @@ public class Master {
 		(new File(chunkDir)).mkdirs();
 		(new File(resultDir)).mkdirs();
 		
-		File jar = new File(GlobalInfo.sharedInfo().JarFilePath, GlobalInfo.sharedInfo().JarFileName);
-		_kpfsMaster.addFileLocation(mapperPath, GlobalInfo.sharedInfo().DataMasterHost, jar.length());
+		String jarPath = rootDir + taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/" + taskName + ".jar";
+		String inputPath = rootDir + taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/" + taskName + ".txt";
+		long jarSize = (new File(jarPath)).length();
+		KPFile jarFile = new KPFile(taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/", taskName + ".jar");
+		try {
+			/* 0 is the id of master */
+			_kpfsMaster.addFileLocation(jarFile.getRelPath(), 0, jarSize);
+		} catch (RemoteException e) {
+			System.err.println("Failed to add file!");
+			e.printStackTrace();
+		}
 		
-		ArrayList<String> files = _kpfsMaster.splitFile(inputFile,
-				GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, fileName);
+		currentTask._mrFile = jarFile;
+		
+		ArrayList<String> files = null;
+		try {
+			files = _kpfsMaster.splitFile(inputPath,
+					GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, taskName);
+		} catch (RemoteException e) {
+			System.err.println("Failed to split file!");
+			e.printStackTrace();
+		}
 		int jobId = 0;
 		for (String fn : files) {
 			JobInfo job = new JobInfo(++jobId, taskName);
-			job._mrFile = new KPFile(GlobalInfo.sharedInfo().JarFilePath, GlobalInfo.sharedInfo().JarFileName);
-			job._taskId = taskId;
+			job._mrFile = jarFile;
 			job._sid = getFreeSlave();
 			job._type = JobInfo.JobType.MAP;
 
 			ArrayList<KPFile> list = new ArrayList<KPFile>();
 			if(fn.contains("/")) {
 				String[] parts = fn.split("/");
-				list.add(new KPFile(chunkDir.substring(0, chunkDir.length() - 1), parts[parts.length - 1]));
+				KPFile kpfile = new KPFile(taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/", parts[parts.length - 1]);
+				list.add(kpfile);
+				try {
+					/* 0 is the id of master */
+					_kpfsMaster.addFileLocation(kpfile.getRelPath(), 0, (new File(fn)).length());
+				} catch (RemoteException e) {
+					System.err.println("ERROR: failed to add chunk file (" + fn + ") into data master!");
+					e.printStackTrace();
+				}
 			}
 			job._inputFile = list;
 
 			currentTask._jobs.put(jobId, job);
-			mapCheckList.put(jobId, false);
 		}
-
+		
+		currentTask._phase = Task.TaskPhase.MAP;
 		JobManager.sharedJobManager().sendJobs(currentTask._jobs.values());
 	}
 
 	public void checkMapCompleted(JobInfo job) {
-		boolean isMapCompleted = true;
-		if (mapCheckList != null) {
-			mapCheckList.put(job._jobId, true);
-
-			Iterator<Map.Entry<Integer, Boolean>> itor = mapCheckList
-					.entrySet().iterator();
-			while (itor.hasNext()) {
-				Map.Entry<Integer, Boolean> entry = (Map.Entry<Integer, Boolean>) itor
-						.next();
-				boolean flag = (boolean) entry.getValue();
-				if (!flag) {
-					isMapCompleted = false;
+		Task task = _tasks.get(job._taskName);
+		if (task == null) {
+			System.out.println("WARNING: receiving a job that does not belong to any working task!");
+			return;
+		}
+		task._jobs.put(job._jobId, job);
+		
+		// TODO: put into another thread
+		if (task.phaseComplete()) {
+			HashMap<Integer, JobInfo> jobs = new HashMap<Integer, JobInfo>();
+			
+			String interDir = task._taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName + "/";
+			
+			HashMap<Integer, ArrayList<KPFile>> interFiles = new HashMap<Integer, ArrayList<KPFile>>();
+			
+			for (JobInfo ji: task._jobs.values()) {
+				HashMap<Integer, KPFile> files = ji.getInterFilesWithIndex();
+				for (Integer idx: files.keySet()) {
+					ArrayList<KPFile> farr = interFiles.get(idx);
+					if (farr==null) {
+						farr = new ArrayList<KPFile>();
+						interFiles.put(idx, farr);
+					}
+					farr.add(files.get(idx));
 				}
 			}
-		}
-
-		if (isMapCompleted) {
-			int jobId = 0;
-			for (int i = 0; i < GlobalInfo.sharedInfo().NumberOfReducer; i++) {
-				JobInfo reduceJob = new JobInfo(++jobId, currentTask._taskName);
-				reduceJob._mrFile = new KPFile(GlobalInfo.sharedInfo().JarFilePath, GlobalInfo.sharedInfo().JarFileName);
-				reduceJob._taskId = currentTask._taskId;
+			
+			for (Integer idx: interFiles.keySet()) {
+				JobInfo reduceJob = new JobInfo(idx, task._taskName);
+				reduceJob._mrFile = task._mrFile;
 				reduceJob._sid = getFreeSlave();
 				reduceJob._type = JobInfo.JobType.REDUCE;
 				reduceJob._inputFile = job._outputFile;
-				currentTask._jobs.put(jobId, reduceJob);
-				reduceCheckList.put(jobId, false);
+				jobs.put(idx, reduceJob);
 			}
-			JobManager.sharedJobManager().sendJobs(currentTask._jobs.values());
+			
+			task._phase = Task.TaskPhase.REDUCE;
+			task._jobs = jobs;
+			JobManager.sharedJobManager().sendJobs(task._jobs.values());
 		}
+		
 	}
 
 	public void checkReduceCompleted(JobInfo job) {
-		boolean isReduceCompleted = true;
-		if (reduceCheckList != null) {
-			reduceCheckList.put(job._jobId, true);
-
-			Iterator<Map.Entry<Integer, Boolean>> itor = reduceCheckList
-					.entrySet().iterator();
-			while (itor.hasNext()) {
-				Map.Entry<Integer, Boolean> entry = (Map.Entry<Integer, Boolean>) itor
-						.next();
-				boolean flag = (boolean) entry.getValue();
-				if (!flag) {
-					isReduceCompleted = false;
-				}
+		Task task = _tasks.get(job._taskName);
+		if (task == null) {
+			System.out.println("WARNING: receiving a job that does not belong to any working task!");
+			return;
+		}
+		task._jobs.put(job._jobId, job);
+		
+		if (task.phaseComplete()) {
+			System.out.println("Task " + task._taskName + " is completed! The output files are at: ");
+			for (JobInfo ji: task._jobs.values()) {
+				System.out.println("\tSlave " + ji._sid + ": " + ji._outputFile.get(0).getRelPath());
 			}
 		}
-
-		if (isReduceCompleted) {
-			System.out.println("Task is completed!");
-		}
+		
+		
 	}
 
 	/* load balancer */

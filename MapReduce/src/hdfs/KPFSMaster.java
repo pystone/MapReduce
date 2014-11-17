@@ -7,10 +7,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -58,7 +54,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 				}
 
 				smallFiles.add(curFileName);
-				addFileLocation(curFileName, GlobalInfo.sharedInfo().DataMasterHost, outFile.length());
+				addFileLocation(curFileName, 0, outFile.length());	// 0 is the id of master
 
 				/* release the memory */
 				curFile = curLine = "";
@@ -84,19 +80,19 @@ public class KPFSMaster implements KPFSMasterInterface {
 	}
 	
 	@Override
-	public boolean addFileLocation(String relPath, String addr, long size) {
+	public boolean addFileLocation(String relPath, int sid, long size) {
 		ArrayList<KPFSFileInfo> ips = _mapTbl.get(relPath);
 		if (ips == null) {
 			ips = new ArrayList<KPFSFileInfo>();
 			_mapTbl.put(relPath, ips);
 		}
-		KPFSFileInfo val = new KPFSFileInfo(addr, size);
+		KPFSFileInfo val = new KPFSFileInfo(sid, size);
 		ips.add(val);
 		return true;
 	}
 	
 	@Override
-	public void removeFileLocation(String relPath, String addr) {
+	public void removeFileLocation(String relPath, int sid) {
 		ArrayList<KPFSFileInfo> ips = _mapTbl.get(relPath);
 		if (ips == null) {
 			return;
@@ -104,7 +100,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 		Iterator<KPFSFileInfo> iter = ips.iterator();
 		if (iter.hasNext()) {
 			KPFSFileInfo info = iter.next();
-			if (info._host.equals(addr)) {
+			if (info._sid == sid) {
 				ips.remove(info);
 			}
 		}

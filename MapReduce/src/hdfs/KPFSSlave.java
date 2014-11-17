@@ -22,13 +22,13 @@ public class KPFSSlave implements KPFSSlaveInterface {
 	
 	@Override
 	public String getFileString(String relPath) throws KPFSException {
-//		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath);
-		File file = new File(relPath);
+		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath);
+//		File file = new File(relPath);
 		Scanner exp = null;
 		try {
 			exp = new Scanner(file);
 		} catch (FileNotFoundException e) {
-			throw new KPFSException("File " + relPath + " is not found!");
+			throw new KPFSException(GlobalInfo.sharedInfo()._sid + ": File " + relPath + " is not found!");
 		}
 		
 		String str = "";
@@ -41,8 +41,8 @@ public class KPFSSlave implements KPFSSlaveInterface {
 
 	@Override
 	public byte[] getFileBytes(String relPath) throws KPFSException {
-//		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath); 
-		File file = new File(relPath); 
+		File file = new File(GlobalInfo.sharedInfo().getLocalRootDir() + relPath); 
+//		File file = new File(relPath); 
 		byte[] byteArr = new byte[(int)file.length()];
 		FileInputStream fin = null;
 		try {

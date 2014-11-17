@@ -1,6 +1,7 @@
 package mapreduce;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -80,42 +81,43 @@ public class PairContainer implements Serializable {
 	}
 	
 	// use some special ASCII code as delimiter
-	public void saveResultFile(String path) {
-		FileOutputStream os = saveResultStream(path);
-		try {
-			os.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	} 
-	
-	public FileOutputStream saveResultStream(String path) {
-		FileOutputStream os = null;
-		BufferedWriter bw = null;
-		try {
-			os = new FileOutputStream(path);
-			bw = new BufferedWriter(new OutputStreamWriter(os));
-			
-			for(Pair pair : _list) {
-				String key = pair.getFirst();
-				Iterator<String> val = pair.getSecond();
-				
-				StringBuilder valStr = new StringBuilder();
-				while(val.hasNext()) {
-					valStr.append(val.next());
-					valStr.append(";");
-				}
-				bw.write(key + "\t" + valStr.toString());
-				bw.newLine();
-			}
-			
-			bw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		return os;
-	}
+//	public void saveResultFile(String path) {
+//		(new File(path)).getParentFile().mkdirs();
+//		
+//		FileOutputStream os = saveResultStream(path);
+//		try {
+//			os.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//	} 
+//	
+//	public FileOutputStream saveResultStream(String path) {
+//		FileOutputStream os = null;
+//		BufferedWriter bw = null;
+//		try {
+//			os = new FileOutputStream(path);
+//			bw = new BufferedWriter(new OutputStreamWriter(os));
+//			
+//			for(Pair pair : _list) {
+//				String key = pair.getFirst();
+//				Iterator<String> val = pair.getSecond();
+//				
+//				StringBuilder valStr = new StringBuilder();
+//				while(val.hasNext()) {
+//					valStr.append(val.next());
+//					valStr.append(";");
+//				}
+//				bw.write(key + "\t" + valStr.toString());
+//				bw.newLine();
+//			}
+//			bw.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		return os;
+//	}
 	
 	// PairContainer => key1:value1,value2,value3;key2:value1,value2,value3;
 	public String toString() {
@@ -125,7 +127,7 @@ public class PairContainer implements Serializable {
 		while(itor.hasNext()) {
 			Pair pair = itor.next();
 			if(i > 0) {
-				sb.append(";");
+				sb.append("\n");
 			}
 			sb.append(pair.toString());
 			i++;
@@ -138,7 +140,7 @@ public class PairContainer implements Serializable {
 		if(str == null) {
 			return;
 		}
-		String[] pairStrs = str.split(";");
+		String[] pairStrs = str.split("\n");
 		for(String pairStr : pairStrs) { 
 			String[] parts = pairStr.split(":");
 			String key = parts[0];

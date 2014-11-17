@@ -31,19 +31,22 @@ public class JobInfo implements Serializable {
 	private static final long serialVersionUID = 5710312452396530832L;
 
 	public enum JobType {
-		NONE, MAP, REDUCE
+		NONE, 
+		MAP, 
+		REDUCE,
+		MAP_COMPLETE,
+		REDUCE_COMPLETE
 	};
 
 	public int _jobId = 0;
-	public int _taskId = 0;
+	public String _taskName = "";
 	public int _sid = 0;
 	public JobType _type = JobInfo.JobType.NONE;
 	public KPFile _mrFile = null;
 	public ArrayList<KPFile> _inputFile = new ArrayList<KPFile>();
 	public ArrayList<KPFile> _outputFile = new ArrayList<KPFile>();
-	public String _taskName = "";
 	
-	public HashMap<String, KPFile> interMap = new HashMap<String, KPFile>();
+	
 	public HashMap<String, KPFile> resultMap = new HashMap<String, KPFile>();
 
 	public JobInfo(int jobId, String taskName) {
@@ -55,16 +58,14 @@ public class JobInfo implements Serializable {
 		byte[] jarByte = _mrFile.getFileBytes();
 		MRBase mrins = null;
 		try {
-//			File file = File.createTempFile(_taskName, null);
-//			file.deleteOnExit();
-			FileOutputStream bout = new FileOutputStream(_taskName);
+			/* no need to duplicate the jar file */
+			File file = File.createTempFile(_taskName, null);
+			file.deleteOnExit();
+			FileOutputStream bout = new FileOutputStream(file);
 			bout.write(jarByte);
 			bout.close();
 			
-			File file = new File(_taskName);
-			
-			URL url = file.toURL();  
-			URL[] urls = new URL[]{url};
+			URL[] urls = new URL[]{file.toURI().toURL()};
 			ClassLoader cl = new URLClassLoader(urls);	
 			Class cls = cl.loadClass(_taskName);
 
@@ -112,84 +113,81 @@ public class JobInfo implements Serializable {
 
 		for (KPFile kpfile : _inputFile) {
 			String fileStr = kpfile.getFileString();
-			if(fileStr.contains("\n")) {
-				String[] parts = fileStr.split("\n");
-				for(String part : parts) {
-					Pair pair = new Pair(part);
-					ret.emit(pair);
-				}
-			}
+			ret.restoreFromString(fileStr);
 		}
+		
 		return ret;
 	}
 
-	public void saveInterFile(PairContainer interFile, String localHost) {
+	public void saveInterFile(PairContainer interFile) {
 		if (_type != JobInfo.JobType.MAP) {
 			System.out
 					.println("WARNING: try to save intermediate pair for reduce job!");
 			return;
 		}
 		
-		// encode intermediate pairs into a string
-		try {
-			Iterator<Pair> itor = interFile.getInitialIterator();
-			while (itor.hasNext()) {
-				Pair pair = itor.next();
-				int hash = (pair.getFirst().hashCode() & Integer.MAX_VALUE)
-						% GlobalInfo.sharedInfo().NumberOfReducer;
-		
-				String interDir = GlobalInfo.sharedInfo().IntermediateDirName;
-				String fileName = _taskName + ".inter"
-						+ String.format("%03d", hash);
-				
-				String path = interDir + "/" + fileName;
-				KPFile kpfile = null;
-				if(interMap.containsKey(path)) {
-					kpfile = interMap.get(path);
-				} else {
-					kpfile = new KPFile(interDir, fileName);
-					_outputFile.add(kpfile);
-					interMap.put(path, kpfile);
-				}
-				
-				kpfile.saveFileLocally(pair.toString().getBytes(), localHost);
+		Iterator<Pair> itor = interFile.getInitialIterator();
+		HashMap<Integer, PairContainer> interPairs = new HashMap<Integer, PairContainer>();
+		while (itor.hasNext()) {
+			Pair pair = itor.next();
+			int hash = (pair.getFirst().hashCode() & Integer.MAX_VALUE)
+					% GlobalInfo.sharedInfo().NumberOfReducer;
+			if (interPairs.get(hash) == null) {
+				interPairs.put(hash, new PairContainer());
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+			PairContainer container = interPairs.get(hash);
+			container.emit(pair);
+		}
+		
+		for (Integer hash: interPairs.keySet()) {
+			PairContainer container = interPairs.get(hash);
+			container.mergeSameKey();
+			
+			String interDir = _taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName + "/";
+			String fileName = _taskName + GlobalInfo.sharedInfo()._sid + ".inter"
+					+ String.format("%03d", hash);
+			
+			KPFile kpfile = new KPFile(interDir, fileName);
+			try {
+				kpfile.saveFileLocally(container.toString().getBytes());
+			} catch (IOException e) {
+				System.err.println("ERROR: failed to notify metadata of inter file to master!");
+				e.printStackTrace();
+			}
+			_outputFile.add(kpfile);
 		}
 	}
 
-	public void saveResultFile(PairContainer resultFile, String localHost) {
+	public void saveResultFile(PairContainer resultContainer) {
 		if (_type != JobInfo.JobType.REDUCE) {
 			System.out.println("WARNING: try to save result pair for map job!");
 			return;
 		}
-
-		// encode result pairs into a string
+		
+		String interDir = _taskName + "/" + GlobalInfo.sharedInfo().ResultDirName + "/";
+		String fileName = _taskName + ".result" + _jobId;
+		
+		KPFile kpfile = new KPFile(interDir, fileName);
 		try {
-			Iterator<Pair> itor = resultFile.getInitialIterator();
-//			int count = 0;
-			while (itor.hasNext()) {
-				Pair pair = itor.next();
-				String interDir = GlobalInfo.sharedInfo().ResultDirName;
-//				String fileName = _taskName + ".result"
-//						+ String.format("%03d", count++);
-				String fileName = _taskName + ".result";
-
-				String path = interDir + "/" + fileName;
-				KPFile kpfile = null;
-				if(resultMap.containsKey(path)) {
-					kpfile = resultMap.get(path);
-				} else {
-					kpfile = new KPFile(interDir, fileName);
-					_outputFile.add(kpfile);
-					resultMap.put(path, kpfile);
-				}
-				
-				kpfile.saveFileLocally(pair.toString().getBytes(), localHost);
-			}
+			kpfile.saveFileLocally(resultContainer.toString().getBytes());
 		} catch (IOException e) {
+			System.err.println("ERROR: failed to notify metadata of result file to master!");
 			e.printStackTrace();
 		}
+		_outputFile.add(kpfile);
+
+	}
+	
+	public HashMap<Integer, KPFile> getInterFilesWithIndex() {
+		if (_type != JobInfo.JobType.MAP_COMPLETE || _outputFile.isEmpty()) {
+			System.out.println("WARNING: try to get all the indeces for non completed map job!");
+			return null;
+		}
+		HashMap<Integer, KPFile> ret = new HashMap<Integer, KPFile>();
+		for  (KPFile kp: _outputFile) {
+			String idxStr = kp._fileName.substring(kp._fileName.length() - 3);
+			ret.put(Integer.parseInt(idxStr), kp);
+		}
+		return ret;
 	}
 }

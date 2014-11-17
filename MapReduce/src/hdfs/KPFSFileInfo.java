@@ -10,15 +10,15 @@ import java.io.Serializable;
  *
  */
 public class KPFSFileInfo implements Serializable {
-	public String _host = "";
 	public long _size = 0;
+	public int _sid = -1;
 	
 	public KPFSFileInfo() {
 		
 	}
 	
-	public KPFSFileInfo(String host, long size) {
-		_host = host;
+	public KPFSFileInfo(int sid, long size) {
+		_sid = sid;
 		_size = size;
 	}
 }

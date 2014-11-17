@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.Socket;
 
 import jobcontrol.JobInfo;
+import mapreduce.GlobalInfo;
 import mapreduce.Master;
 import mapreduce.Slave;
 
@@ -37,8 +38,9 @@ public class MsgHandler extends Thread {
 					switch (msg._type) {
 					/* master -> slave */
 					case HELLO:
-						Slave.sharedSlave()._sid = ((Integer)(msg._content)).intValue();
-						System.out.println("Sid got: " + ((Integer)(msg._content)).intValue());
+//						GlobalInfo.sharedInfo()._sid = ((Integer)(msg._content)).intValue();
+//						System.out.println("Sid got: " + ((Integer)(msg._content)).intValue());
+						System.out.println("Connection established");
 						break;
 					case NEW_JOB:
 						/* master -> slave */

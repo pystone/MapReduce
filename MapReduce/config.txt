@@ -1,22 +1,23 @@
 MasterPort = 10000
 SlavePort = 10001
-MasterHost = localhost
-SlaveHosts = unix2.andrew.cmu.edu, unix3.andrew.cmu.edu, \
-			unix4.andrew.cmu.edu
-SlaveRootDir = /tmp/unix2, /tmp/unix2, \
-			/tmp/unix4 
+MasterHost = 128.237.162.33
+SlaveHosts = 128.237.162.33, 128.237.162.33, \
+			128.237.162.33
+SlaveRootDir = /tmp/unix2/, /tmp/unix3/, \
+			/tmp/unix4/ 
 
 FileChunkSizeB = 10000000
 NumberOfReducer= 1
 
-MasterRootDir = /tmp/master
+MasterRootDir = /tmp/master/
 
 IntermediateDirName = IntermediateFiles
 ChunkDirName = ChunkInputFiles
 ResultDirName = ResultFiles
+UserDirName = UserFiles
 
-DataMasterHost = localhost
-DataMasterPort = 4000
-DataSlavePort = 5000
+DataMasterHost = 128.237.162.33
+DataMasterPort = 6789
+DataSlavePort = 7890
 
 

@@ -7,14 +7,11 @@ import hdfs.KPFSSlave;
 import hdfs.KPFSSlaveInterface;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import jobcontrol.JobInfo;
@@ -36,13 +33,10 @@ public class Slave {
 		return _sharedSlave;
 	}
 
-	public int _sid;
 	public Socket _socket;
 
-	// public KPFSStub _kpfs;
 
 	private Slave() {
-		// _kpfs = new KPFSStub();
 
 		try {
 			_socket = new Socket(GlobalInfo.sharedInfo().MasterHost,
@@ -57,7 +51,9 @@ public class Slave {
 		}
 	}
 
-	public void start() {
+	public void start(int sid) {
+		GlobalInfo.sharedInfo()._sid = sid;
+		
 		/* start HDFS */
 		try {
 			KPFSSlave obj = new KPFSSlave();
@@ -67,20 +63,19 @@ public class Slave {
 			Registry _registry = null;
 			try {
 				_registry = LocateRegistry
-						.getRegistry(GlobalInfo.sharedInfo().DataSlavePort);
+						.getRegistry(GlobalInfo.sharedInfo().getDataSlavePort(GlobalInfo.sharedInfo()._sid));
 				_registry.list();
 			} catch (RemoteException e) {
-				_registry = LocateRegistry.createRegistry(GlobalInfo.sharedInfo().DataSlavePort);
+				_registry = LocateRegistry.createRegistry(GlobalInfo.sharedInfo().getDataSlavePort(GlobalInfo.sharedInfo()._sid));
 			}
 				
-			_registry.bind("KPFSSlaveInterface", stub);
+			_registry.bind("DataSlave", stub);
 
 			System.out.println("HDFS ready");
 		} catch (Exception e) {
 			System.err.println("Failed to open HDFS service!");
 			e.printStackTrace();
 		}
-
 	}
 
 	public void newJob(JobInfo job) throws RemoteException {
@@ -101,18 +96,15 @@ public class Slave {
 		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 
-		String content = job._inputFile.get(0).getFileString();
-		ins.map(job._inputFile.get(0)._fileName, content, interPairs);
+		for (int i=0; i<job._inputFile.size(); ++i) {
+			String content = job._inputFile.get(i).getFileString();
+			ins.map(job._inputFile.get(i)._fileName, content, interPairs);
+		}
+		
 		interPairs.mergeSameKey();
 
-		String localhost = "";
-		try {
-			localhost = InetAddress.getLocalHost().getHostAddress();
-		} catch (UnknownHostException e) {
-			System.err.println("Network error!");
-			e.printStackTrace();
-		}
-		job.saveInterFile(interPairs, localhost);
+		job.saveInterFile(interPairs);
+		job._type = JobInfo.JobType.MAP_COMPLETE;
 
 		// send complete msg back to master
 		finishJob(job, Message.MessageType.MAP_COMPLETE);
@@ -129,36 +121,16 @@ public class Slave {
 			Pair pair = iter.next();
 			String key = pair.getFirst();
 			Iterator<String> second = pair.getSecond();
-			StringBuilder sb = new StringBuilder();
-			while(second.hasNext()){
-				sb.append(second.next());
-			}
-			ArrayList<String> list = new ArrayList<String>();
-			if(sb.toString().contains(",")) {
-				String[] parts = sb.toString().split(",");
-				for(String part : parts) {
-					list.add(part);
-				}
-			} else {
-				list.add(sb.toString());
-			}
-			Iterator<String> value = list.iterator();
 			
 			try {
-				ins.reduce(key, value, resultPairs);
+				ins.reduce(key, second, resultPairs);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
-		String localhost = "";
-		try {
-			localhost = InetAddress.getLocalHost().getHostAddress();
-		} catch (UnknownHostException e) {
-			System.err.println("Network error!");
-			e.printStackTrace();
-		}
-		job.saveResultFile(resultPairs, localhost);
+		job.saveResultFile(resultPairs);
+		job._type = JobInfo.JobType.REDUCE_COMPLETE;
 
 		// send complete msg back to master
 		finishJob(job, Message.MessageType.REDUCE_COMPLETE);
@@ -167,7 +139,7 @@ public class Slave {
 	public void finishJob(JobInfo job, Message.MessageType type) {
 		Message fin = new Message();
 		fin._type = type;
-		fin._source = _sid;
+		fin._source = GlobalInfo.sharedInfo()._sid;
 		fin._content = job;
 		try {
 			NetworkHelper.send(_socket, fin);

@@ -6,6 +6,7 @@ package mapreduce;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -24,20 +25,25 @@ public class GlobalInfo {
 	public int FileChunkSizeB = 27;
 	public int NumberOfReducer = 3;
 	
-	public String MasterRootDir = "/tmp/";
+	public String MasterRootDir = "/tmp/master";
 	
 	public String IntermediateDirName = "IntermediateFiles";
 	public String ChunkDirName = "ChunkInputFiles";
 	public String ResultDirName = "ResultFiles";
+	public String UserDirName = "UserFiles";
 	
-	public String JarFilePath = "jar";
-	public String JarFileName = "WordCounter.jar";
+//	public String JarFilePath = "jar";
+//	public String JarFileName = "WordCounter.jar";
 	
 	public String DataMasterHost = "73.52.255.101";
-	public int DataMasterPort = 9987;
-	public int DataSlavePort = 9986;
+	public int DataMasterPort = 9980;
+	public int DataSlavePort = 9990;
 	
-	public HashMap<String, String> Host2RootDir = new HashMap<String, String>(); 
+//	public HashMap<String, String> Host2RootDir = new HashMap<String, String>();
+	public HashMap<Integer, String> Host2RootDir = new HashMap<Integer, String>();
+	
+	/* set by every node */
+	public int _sid = -1;
 	
 	
 	public static GlobalInfo _sharedInfo = null;
@@ -68,9 +74,13 @@ public class GlobalInfo {
 		return ret;
 	}
 	
+//	public String getLocalRootDir() {
+//		String localhost = getLocalHost();
+//		return getRootDirByHost(localhost);
+//	}
+	
 	public String getLocalRootDir() {
-		String localhost = getLocalHost();
-		return getRootDirByHost(localhost);
+		return Host2RootDir.get(_sid);
 	}
 	
 	public String getLocalHost() {
@@ -91,7 +101,7 @@ public class GlobalInfo {
 	
 	public boolean isSlave() {
 		String host = getLocalHost();
-		Set<String> shosts = Host2RootDir.keySet();
+		Collection<String> shosts = Host2RootDir.values();
 		for (String slave: shosts) {
 			if (shosts.equals(host)) {
 				return true;
@@ -100,4 +110,13 @@ public class GlobalInfo {
 		return false;
 	}
 	
+	public Integer[] getActiveSlaveId() {
+		Set<Integer> tmpKey = ((HashMap<Integer, String>)SID2Host.clone()).keySet();
+		tmpKey.remove(0);
+		return (Integer[]) tmpKey.toArray();
+	}
+	
+	public int getDataSlavePort(int sid) {
+		return DataSlavePort + sid;
+	}
 }

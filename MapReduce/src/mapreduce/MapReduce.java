@@ -21,9 +21,12 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * @author PY
@@ -45,21 +48,25 @@ public class MapReduce {
 		// System.exit(-1);
 		// }
 		// start(args[0], args[1]);
+		
+		
 		System.out.println("(M)aster or (S)lave?");
 		Scanner in = new Scanner(System.in);
 		String line = in.nextLine();
 		String[] cmd = line.split("\\s+");
+		String opt = "";
 
 		String role = null;
 		if (cmd[0].contains("m")) {
 			role = "m";
 		} else if (cmd[0].contains("s")) {
 			role = "s";
+			opt = cmd[1];
 		}
-		start("config.txt", role);
+		start("config.txt", role, opt);
 	}
 
-	private static void start(String confFileName, String mstOrSlv) {
+	private static void start(String confFileName, String mstOrSlv, String opt) {
 		Properties prop = new Properties();
 		try {
 			InputStream propInput = new FileInputStream(confFileName);
@@ -84,7 +91,7 @@ public class MapReduce {
 			// GlobalInfo.sharedInfo().isSlave()) {
 		} else if (mstOrSlv.equalsIgnoreCase("s")) {
 			System.out.println("Slave");
-			Slave.sharedSlave().start();
+			Slave.sharedSlave().start(Integer.parseInt(opt));
 		} else {
 			System.out.println("This machine is not included in config file!");
 		}
@@ -96,6 +103,7 @@ public class MapReduce {
 		GlobalInfo.sharedInfo().SlavePort = Integer.parseInt(prop
 				.getProperty("SlavePort"));
 		GlobalInfo.sharedInfo().MasterHost = prop.getProperty("MasterHost");
+		GlobalInfo.sharedInfo().SID2Host.put(0, GlobalInfo.sharedInfo().MasterHost);
 
 		String[] slaves = prop.getProperty("SlaveHosts").split(",");
 		for (int i = 0; i < slaves.length; ++i) {
@@ -104,8 +112,7 @@ public class MapReduce {
 
 		String[] slaverootdir = prop.getProperty("SlaveRootDir").split(",");
 		for (int i = 0; i < slaverootdir.length; ++i) {
-			GlobalInfo.sharedInfo().Host2RootDir.put(slaves[i].trim(),
-					slaverootdir[i].trim());
+			GlobalInfo.sharedInfo().Host2RootDir.put(i + 1, slaverootdir[i].trim());
 		}
 
 		GlobalInfo.sharedInfo().FileChunkSizeB = Integer.parseInt(prop
@@ -114,12 +121,15 @@ public class MapReduce {
 				.getProperty("NumberOfReducer"));
 		GlobalInfo.sharedInfo().MasterRootDir = prop
 				.getProperty("MasterRootDir");
+		GlobalInfo.sharedInfo().Host2RootDir.put(0, GlobalInfo.sharedInfo().MasterRootDir);
 
 		GlobalInfo.sharedInfo().IntermediateDirName = prop
 				.getProperty("IntermediateDirName");
 		GlobalInfo.sharedInfo().ChunkDirName = prop.getProperty("ChunkDirName");
 		GlobalInfo.sharedInfo().ResultDirName = prop
 				.getProperty("ResultDirName");
+		GlobalInfo.sharedInfo().UserDirName = prop
+				.getProperty("UserDirName");
 
 		GlobalInfo.sharedInfo().DataMasterHost = prop
 				.getProperty("DataMasterHost");
@@ -183,14 +193,14 @@ public class MapReduce {
 
 	private static void testKPFSMaster() {
 		KPFSMaster master = new KPFSMaster();
-		master.addFileLocation("a", "1.1.1.1", 14);
-		master.addFileLocation("a", "2.2.2.2", 15);
-		master.addFileLocation("b", "1.1.1.1", 16);
-		master.addFileLocation("c", "3.3.3.3", 17);
+		master.addFileLocation("a", 1, 14);
+		master.addFileLocation("a", 2, 15);
+		master.addFileLocation("b", 3, 16);
+		master.addFileLocation("c", 4, 17);
 		System.out.println(master.getFileLocation("a"));
 		System.out.println(master.getFileLocation("d"));
 		System.out.println(master.getFileLocation("c"));
-		master.removeFileLocation("a", "1.1.1.1");
+		master.removeFileLocation("a", 1);
 		System.out.println(master.getFileLocation("a"));
 	}
 

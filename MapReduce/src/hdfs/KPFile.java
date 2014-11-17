@@ -3,28 +3,24 @@
  */
 package hdfs;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Paths;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Scanner;
 
 import mapreduce.GlobalInfo;
-import network.Message;
 
 /**
  * @author PY
  * 
  */
 public class KPFile implements Serializable {
+
+	private static final long serialVersionUID = 225432063820226038L;
 	public String _relDir = null; // "taskName/*Files/"
 	public String _fileName = null; // "taskName.part001"
 
@@ -37,9 +33,13 @@ public class KPFile implements Serializable {
 		/* retrieve location information from data master */
 		KPFSMasterInterface masterService = getMasterService();
 		KPFSFileInfo info = masterService.getFileLocation(getRelPath());
+		
+		if (info == null) {
+			throw new RemoteException("Cannot find the location of the file: " + getRelPath());
+		}
 
 		/* retrieve file content from actual data node */
-		KPFSSlaveInterface slaveService = getSlaveService(info._host);
+		KPFSSlaveInterface slaveService = getSlaveService(info._sid);
 		String content = null;
 		try {
 			content = slaveService.getFileString(getRelPath());
@@ -56,7 +56,7 @@ public class KPFile implements Serializable {
 		KPFSFileInfo info = masterService.getFileLocation(getRelPath());
 
 		/* retrieve file content from actual data node */
-		KPFSSlaveInterface slaveService = getSlaveService(info._host);
+		KPFSSlaveInterface slaveService = getSlaveService(info._sid);
 		byte[] content = null;
 		try {
 			content = slaveService.getFileBytes(getRelPath());
@@ -76,7 +76,7 @@ public class KPFile implements Serializable {
 					GlobalInfo.sharedInfo().DataMasterHost,
 					GlobalInfo.sharedInfo().DataMasterPort);
 			masterService = (KPFSMasterInterface) registry
-					.lookup("KPFSMasterInterface");
+					.lookup("DataMaster");
 		} catch (RemoteException | NotBoundException e) {
 			System.out
 					.println("Error occurs when looking up service in data master!");
@@ -85,14 +85,14 @@ public class KPFile implements Serializable {
 		return masterService;
 	}
 
-	private KPFSSlaveInterface getSlaveService(String host) {
+	private KPFSSlaveInterface getSlaveService(int sid) {
 		Registry registry = null;
 		KPFSSlaveInterface slaveService = null;
 		try {
-			registry = LocateRegistry.getRegistry(host,
-					GlobalInfo.sharedInfo().DataSlavePort);
+			registry = LocateRegistry.getRegistry(GlobalInfo.sharedInfo().getSlaveHostBySID(sid),
+					GlobalInfo.sharedInfo().getDataSlavePort(sid));
 			slaveService = (KPFSSlaveInterface) registry
-					.lookup("KPFSSlaveInterface");
+					.lookup("DataSlave");
 		} catch (RemoteException | NotBoundException e) {
 			System.out
 					.println("Error occurs when looking up service in data node!");
@@ -102,15 +102,15 @@ public class KPFile implements Serializable {
 	}
 
 	public String getRelPath() {
-		return _relDir + "/" + _fileName;
+		return _relDir + _fileName;
 	}
 
 	public String getLocalAbsPath() {
-//		return GlobalInfo.sharedInfo().getLocalRootDir() + getRelPath();
-		return getRelPath();
+		return GlobalInfo.sharedInfo().getLocalRootDir() + getRelPath();
+//		return getRelPath();
 	}
 
-	public void saveFileLocally(byte[] byteArr, String localHost)
+	public void saveFileLocally(byte[] byteArr)
 			throws IOException {
 		File file = new File(getLocalAbsPath());
 		file.getParentFile().mkdirs();
@@ -119,10 +119,13 @@ public class KPFile implements Serializable {
 		outStream.write(byteArr);
 		outStream.write("\n".getBytes());
 		outStream.close();
-
-		KPFSMasterInterface masterService = getMasterService();
-		masterService.addFileLocation(getRelPath(), localHost,
-				file.length());
+		
+		saveFileMetadataToMaster((int) file.length());
 	}
-	//
+	
+	public void saveFileMetadataToMaster(int size) throws RemoteException {
+		KPFSMasterInterface masterService = getMasterService();
+		masterService.addFileLocation(getRelPath(), GlobalInfo.sharedInfo()._sid,
+				size);
+	}
 }
