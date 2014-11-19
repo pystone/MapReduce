@@ -3,6 +3,7 @@
  */
 package mapreduce;
 
+import hdfs.KPFSException;
 import hdfs.KPFSMaster;
 import hdfs.KPFSMasterInterface;
 import hdfs.KPFSSlave;
@@ -151,14 +152,9 @@ public class Master {
 		
 		currentTask._mrFile = jarFile;
 		
-		ArrayList<String> files = null;
-		try {
-			files = _kpfsMaster.splitFile(inputPath,
+		ArrayList<String> files = ((KPFSMaster) _kpfsMaster).splitFile(inputPath,
 					GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, taskName);
-		} catch (RemoteException e) {
-			System.err.println("Failed to split file!");
-			e.printStackTrace();
-		}
+		
 		int jobId = 0;
 		for (String fn : files) {
 			JobInfo job = new JobInfo(++jobId, taskName);
@@ -180,9 +176,18 @@ public class Master {
 				}
 			}
 			job._inputFile = list;
+			
+			/* duplicate the files to some other data nodes */
+			try {
+				((KPFSMaster) _kpfsMaster).duplicateFiles(list, _slvSocket.keySet().toArray());
+			} catch (IOException | KPFSException e) {
+				System.out.println("ERROR: failed to duplicate files!");
+				e.printStackTrace();
+			}
 
 			currentTask._jobs.put(jobId, job);
 		}
+		
 		
 		currentTask._phase = Task.TaskPhase.MAP;
 		JobManager.sharedJobManager().sendJobs(currentTask._jobs.values());

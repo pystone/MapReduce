@@ -3,10 +3,19 @@
  */
 package network;
 
+import hdfs.KPFSMasterInterface;
+import hdfs.KPFSSlaveInterface;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
+import mapreduce.GlobalInfo;
 
 /**
  * @author PY
@@ -61,6 +70,39 @@ public class NetworkHelper {
 		}
 		
 		return null;
-		
+	}
+	
+	/* ============= RMI helper functions ============= */
+	public static KPFSMasterInterface getMasterService() {
+		Registry registry = null;
+		KPFSMasterInterface masterService = null;
+		try {
+			registry = LocateRegistry.getRegistry(
+					GlobalInfo.sharedInfo().DataMasterHost,
+					GlobalInfo.sharedInfo().DataMasterPort);
+			masterService = (KPFSMasterInterface) registry
+					.lookup("DataMaster");
+		} catch (RemoteException | NotBoundException e) {
+			System.out
+					.println("Error occurs when looking up service in data master!");
+			e.printStackTrace();
+		}
+		return masterService;
+	}
+
+	public static KPFSSlaveInterface getSlaveService(int sid) {
+		Registry registry = null;
+		KPFSSlaveInterface slaveService = null;
+		try {
+			registry = LocateRegistry.getRegistry(GlobalInfo.sharedInfo().getSlaveHostBySID(sid),
+					GlobalInfo.sharedInfo().getDataSlavePort(sid));
+			slaveService = (KPFSSlaveInterface) registry
+					.lookup("DataSlave");
+		} catch (RemoteException | NotBoundException e) {
+			System.out
+					.println("Error occurs when looking up service in data node!");
+			e.printStackTrace();
+		}
+		return slaveService;
 	}
 }

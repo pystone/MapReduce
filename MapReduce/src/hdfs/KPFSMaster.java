@@ -3,7 +3,9 @@
  */
 package hdfs;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Scanner;
 
+import network.NetworkHelper;
 import mapreduce.GlobalInfo;
 
 /**
@@ -24,7 +27,6 @@ public class KPFSMaster implements KPFSMasterInterface {
 
 	private HashMap<String, ArrayList<KPFSFileInfo>> _mapTbl = new HashMap<String, ArrayList<KPFSFileInfo>>(); 
 	
-	@Override
 	public ArrayList<String> splitFile(String filePath, int chunkSizeB,
 			String directory, String fileName) {
 		// TODO: duplicate the files!
@@ -37,6 +39,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 			int partCnt = 0;
 
 			while (scan.hasNextLine()) {
+				/* read in by line in case of large file overflowing the memory */
 				for (; scan.hasNextLine() && curFile.length() < chunkSizeB;) {
 					curLine = scan.nextLine();
 					curFile += curLine + '\n';
@@ -66,6 +69,32 @@ public class KPFSMaster implements KPFSMasterInterface {
 		}
 		return null;
 	}
+	
+	public void duplicateFiles(ArrayList<KPFile> files, Object[] aliveSlaves) throws IOException, KPFSException {
+		for (KPFile file:files) {
+			File f = new File(file.getLocalAbsPath());
+			FileInputStream fin = new FileInputStream(f);
+			BufferedInputStream bin = new BufferedInputStream(fin);
+			byte[] byteArr = new byte[(int)f.length()];
+			
+			bin.read(byteArr, 0, byteArr.length);
+			bin.close();
+			fin.close();
+			
+			/* get the slave id this file would be duplicated at.
+			 * here can be appended with load balancer.
+			 */
+			Random rand = new Random();
+			Object soid = aliveSlaves[rand.nextInt(aliveSlaves.length)];
+			int sid = ((Integer) soid).intValue();
+			
+			/* store the file in that data node and update the metadata in server */
+			KPFSSlaveInterface sl = NetworkHelper.getSlaveService(sid);
+			sl.storeFile(file.getRelPath(), byteArr);
+			addFileLocation(file._fileName, sid, f.length());
+		}
+	}
+	
 	
 	@Override
 	public KPFSFileInfo getFileLocation(String relPath) {

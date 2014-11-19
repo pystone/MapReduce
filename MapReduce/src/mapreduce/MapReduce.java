@@ -34,11 +34,6 @@ import java.util.Set;
  */
 public class MapReduce {
 
-	private static int _masterPort;
-	private static int _slavePort;
-	private static String _masterHost;
-	private static String[] _slaveHosts;
-
 	/**
 	 * @param args
 	 */
@@ -138,14 +133,6 @@ public class MapReduce {
 		GlobalInfo.sharedInfo().DataSlavePort = Integer.parseInt(prop
 				.getProperty("DataSlavePort"));
 
-		_masterPort = Integer.parseInt(prop.getProperty("MasterPort"));
-		_slavePort = Integer.parseInt(prop.getProperty("SlavePort"));
-		_masterHost = prop.getProperty("MasterHost");
-		_slaveHosts = prop.getProperty("SlaveHosts").split(",");
-		for (int i = 0; i < _slaveHosts.length; ++i) {
-			_slaveHosts[i] = _slaveHosts[i].trim();
-		}
-
 	}
 
 	// ====== test begin ======
@@ -175,7 +162,7 @@ public class MapReduce {
 		} catch (NotBoundException e) {
 			e.printStackTrace();
 		}
-		ArrayList<String> files = _kpfsMaster.splitFile(file.getAbsolutePath(),
+		ArrayList<String> files = ((KPFSMaster) _kpfsMaster).splitFile(file.getAbsolutePath(),
 				20, dir, fileName);
 		for (String fn : files) {
 			System.out.println(fn);
