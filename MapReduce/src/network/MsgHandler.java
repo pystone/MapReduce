@@ -40,6 +40,9 @@ public class MsgHandler extends Thread {
 				}
 				switch (msg._type) {
 				/* master -> slave */
+				case HELLO_ACK:
+					Slave.sharedSlave().slaveReady();
+					break;
 				case NEW_JOB:
 					Slave.sharedSlave().newJob((JobInfo)msg._content);
 					break;
@@ -47,6 +50,9 @@ public class MsgHandler extends Thread {
 				/* slave -> master */
 				case HELLO_SID:
 					Master.sharedMaster().newSlave(_socket, msg._source);
+					break;
+				case SLAVE_HEARTBEAT:
+					Master.sharedMaster().slaveHeartbeat(msg._source, (Object[])msg._content);
 					break;
 				case MAP_COMPLETE:
 					Master.sharedMaster().checkMapCompleted((JobInfo)msg._content);
