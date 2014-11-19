@@ -36,7 +36,7 @@ public class Slave {
 	public Socket _socket;
 	public ArrayList<JobInfo> _waitingJob = new ArrayList<JobInfo>();
 	public ArrayList<JobInfo> _workingJob = new ArrayList<JobInfo>();
-
+	private boolean _ready = false;
 
 	private Slave() {
 
@@ -94,6 +94,33 @@ public class Slave {
 		/* start the coordinator of workers */
 		SlaveWork work = new SlaveWork(null, false);
 		work.start();
+		
+		while (true) {
+			if (!_ready) {
+				continue;
+			}
+			
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			Object[] tracker = {_waitingJob.toArray(), _workingJob.toArray()};
+			Message heartbeat = new Message(GlobalInfo.sharedInfo()._sid, Message.MessageType.SLAVE_HEARTBEAT);
+			heartbeat._content = tracker;
+			try {
+				NetworkHelper.send(_socket, heartbeat);
+			} catch (IOException e) {
+				System.err.println("Connection broken. Please restart this slave!");
+				System.exit(-1);
+			}
+		}
+	}
+	
+	public void slaveReady() {
+		_ready = true;
 	}
 
 	public void newJob(JobInfo job) {

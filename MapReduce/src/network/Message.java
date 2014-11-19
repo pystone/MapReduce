@@ -14,13 +14,22 @@ public class Message implements Serializable {
 	
 	public enum MessageType {
 		HELLO_SID,
+		HELLO_ACK,
 		NEW_JOB,
 		MAP_COMPLETE,
 		REDUCE_COMPLETE,
-//		JOB_COMPLETE
+		SLAVE_HEARTBEAT
 	};
 	
 	public MessageType _type;
 	public int _source;
 	public Object _content;
+	
+	public Message() {
+		
+	}
+	public Message(int sid, MessageType type) {
+		_type = type;
+		_source = sid;
+	}
 }
