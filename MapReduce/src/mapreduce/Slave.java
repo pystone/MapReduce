@@ -95,6 +95,7 @@ public class Slave {
 		SlaveWork work = new SlaveWork(null, false);
 		work.start();
 		
+
 		/* sending heart beat to master */
 		while (true) {
 			if (!_ready) {
@@ -102,7 +103,7 @@ public class Slave {
 			}
 			
 			try {
-				Thread.sleep(500);
+				Thread.sleep(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

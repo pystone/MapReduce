@@ -120,7 +120,7 @@ public class Master {
 		// TODO: check the incoming slave is on the config file!
 		_slvSocket.put(sid, socket);
 		System.out.println("New slave connected! " + sid);
-		
+
 		Message ack = new Message(0, Message.MessageType.HELLO_ACK);
 		try {
 			NetworkHelper.send(socket, ack);
@@ -138,10 +138,20 @@ public class Master {
 	}
 
 	public void newTask(String taskName) {
+		String rootDir = GlobalInfo.sharedInfo().MasterRootDir;
+		String jarPath = rootDir + taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/" + taskName + ".jar";
+		String inputPath = rootDir + taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/" + taskName + ".txt";
+		File jarf = new File (jarPath);
+		File inf = new File (inputPath);
+		if (!jarf.exists() || !inf.exists()) {
+			System.out.println("Please put " + taskName + ".txt and " + taskName + ".jar into the right directory and try again!" );
+			return;
+		}
+		
 		Task currentTask = new Task(taskName);
 		_tasks.put(taskName, currentTask);
 
-		String rootDir = GlobalInfo.sharedInfo().MasterRootDir;
+		
 		String interDir = rootDir + taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName
 				+ "/";
 		String chunkDir = rootDir + taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/";
@@ -153,9 +163,8 @@ public class Master {
 		(new File(chunkDir)).mkdirs();
 		(new File(resultDir)).mkdirs();
 		
-		String jarPath = rootDir + taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/" + taskName + ".jar";
-		String inputPath = rootDir + taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/" + taskName + ".txt";
-		long jarSize = (new File(jarPath)).length();
+		
+		long jarSize = jarf.length();
 		KPFile jarFile = new KPFile(taskName + "/" + GlobalInfo.sharedInfo().UserDirName + "/", taskName + ".jar");
 		try {
 			/* 0 is the id of master */
