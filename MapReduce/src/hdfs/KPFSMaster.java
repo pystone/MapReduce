@@ -29,7 +29,6 @@ public class KPFSMaster implements KPFSMasterInterface {
 	
 	public ArrayList<String> splitFile(String filePath, int chunkSizeB,
 			String directory, String fileName) {
-		// TODO: duplicate the files!
 		try {
 			File file = new File(filePath);
 			Scanner scan = new Scanner(file);
@@ -97,7 +96,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 	
 	
 	@Override
-	public KPFSFileInfo getFileLocation(String relPath) {
+	public synchronized KPFSFileInfo getFileLocation(String relPath) {
 		ArrayList<KPFSFileInfo> ips = (ArrayList<KPFSFileInfo>) _mapTbl.get(relPath);
 		if (ips==null || ips.isEmpty()) {
 			return null;
@@ -110,7 +109,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 	}
 	
 	@Override
-	public boolean addFileLocation(String relPath, int sid, long size) {
+	public synchronized boolean addFileLocation(String relPath, int sid, long size) {
 		ArrayList<KPFSFileInfo> ips = _mapTbl.get(relPath);
 		if (ips == null) {
 			ips = new ArrayList<KPFSFileInfo>();
@@ -122,7 +121,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 	}
 	
 	@Override
-	public void removeFileLocation(String relPath, int sid) {
+	public synchronized void removeFileLocation(String relPath, int sid) {
 		ArrayList<KPFSFileInfo> ips = _mapTbl.get(relPath);
 		if (ips == null) {
 			return;

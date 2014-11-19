@@ -30,29 +30,32 @@ public class MsgHandler extends Thread {
     	boolean connAlive = true;
     	while (connAlive) {
     		try {
+    			Message msg = null;
     			synchronized(_socket) {
-					Message msg = NetworkHelper.receive(_socket);
-					if (msg == null) {
-						continue;
-					}
-					switch (msg._type) {
-					/* master -> slave */
-					case NEW_JOB:
-						Slave.sharedSlave().newJob((JobInfo)msg._content);
-						break;
-						
-					/* slave -> master */
-					case HELLO_SID:
-						Master.sharedMaster().newSlave(_socket, msg._source);
-						break;
-					case MAP_COMPLETE:
-						Master.sharedMaster().checkMapCompleted((JobInfo)msg._content);
-						break;
-					case REDUCE_COMPLETE:
-						Master.sharedMaster().checkReduceCompleted((JobInfo)msg._content);
-						break;
-					}
+					msg = NetworkHelper.receive(_socket);
     			}
+    			
+    			if (msg == null) {
+					continue;
+				}
+				switch (msg._type) {
+				/* master -> slave */
+				case NEW_JOB:
+					Slave.sharedSlave().newJob((JobInfo)msg._content);
+					break;
+					
+				/* slave -> master */
+				case HELLO_SID:
+					Master.sharedMaster().newSlave(_socket, msg._source);
+					break;
+				case MAP_COMPLETE:
+					Master.sharedMaster().checkMapCompleted((JobInfo)msg._content);
+					break;
+				case REDUCE_COMPLETE:
+					Master.sharedMaster().checkReduceCompleted((JobInfo)msg._content);
+					break;
+				}
+    			
 			} catch (ClassNotFoundException | IOException e) {
 				connAlive = false;
 			}

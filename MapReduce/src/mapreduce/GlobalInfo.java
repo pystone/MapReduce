@@ -20,6 +20,7 @@ public class GlobalInfo {
 	public int SlavePort = 8999;
 	public String MasterHost = "73.52.255.101";
 	public HashMap<Integer, String> SID2Host = new HashMap<Integer, String>();
+	public HashMap<Integer, Integer> SID2Capacity = new HashMap<Integer, Integer>(); 
 	
 	// For KPFS
 	public int FileChunkSizeB = 27;
@@ -32,14 +33,11 @@ public class GlobalInfo {
 	public String ResultDirName = "ResultFiles";
 	public String UserDirName = "UserFiles";
 	
-//	public String JarFilePath = "jar";
-//	public String JarFileName = "WordCounter.jar";
 	
 	public String DataMasterHost = "73.52.255.101";
 	public int DataMasterPort = 9980;
 	public int DataSlavePort = 9990;
 	
-//	public HashMap<String, String> Host2RootDir = new HashMap<String, String>();
 	public HashMap<Integer, String> Host2RootDir = new HashMap<Integer, String>();
 	
 	/* set by every node */

@@ -50,7 +50,7 @@ public class NetworkHelper {
 	 * ATTENTION: before using this function, make sure you will get the response right away, 
 	 * otherwise you will get stuck here. It's a block function.
 	 */
-	public static Message sendAndReceive(Socket socket, Message msg) throws IOException, ClassNotFoundException {
+	public static synchronized Message sendAndReceive(Socket socket, Message msg) throws IOException, ClassNotFoundException {
 		/* send */
 		if (!(msg instanceof Message)) {
 			return null;
@@ -73,7 +73,7 @@ public class NetworkHelper {
 	}
 	
 	/* ============= RMI helper functions ============= */
-	public static KPFSMasterInterface getMasterService() {
+	public static synchronized KPFSMasterInterface getMasterService() {
 		Registry registry = null;
 		KPFSMasterInterface masterService = null;
 		try {
@@ -90,7 +90,7 @@ public class NetworkHelper {
 		return masterService;
 	}
 
-	public static KPFSSlaveInterface getSlaveService(int sid) {
+	public static synchronized KPFSSlaveInterface getSlaveService(int sid) {
 		Registry registry = null;
 		KPFSSlaveInterface slaveService = null;
 		try {

@@ -12,7 +12,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Iterator;
+import java.util.ArrayList;
 
 import jobcontrol.JobInfo;
 import network.Message;
@@ -34,6 +34,9 @@ public class Slave {
 	}
 
 	public Socket _socket;
+	public ArrayList<JobInfo> _workingMap = new ArrayList<JobInfo>();
+	public ArrayList<JobInfo> _workingReduce = new ArrayList<JobInfo>();
+	public ArrayList<JobInfo> _waitingJob = new ArrayList<JobInfo>();
 
 
 	private Slave() {
@@ -88,75 +91,50 @@ public class Slave {
 			System.err.println("Failed to open HDFS service!");
 			e.printStackTrace();
 		}
+		
+		/* start the coordinator of workers */
+		SlaveWork work = new SlaveWork(null, false);
+		work.start();
 	}
 
-	public void newJob(JobInfo job) throws RemoteException {
+	public void newJob(JobInfo job) {
 		System.out.println("get a new job: " + job._jobId + " " + job._taskName
 				+ " " + job._type);
 
-		// do map or reduce
-		if (job._type == JobInfo.JobType.MAP) {
-			map(job);
-		} else if (job._type == JobInfo.JobType.REDUCE) {
-			reduce(job);
-		} else {
-			System.out.println("WARNING: Receiving a NONE job!");
-		}
-	}
-
-	public void map(JobInfo job) throws RemoteException {
-		PairContainer interPairs = new PairContainer();
-		MRBase ins = job.getMRInstance();
-
-		for (int i=0; i<job._inputFile.size(); ++i) {
-			String content = job._inputFile.get(i).getFileString();
-			ins.map(job._inputFile.get(i)._fileName, content, interPairs);
+		synchronized (_waitingJob) {
+			_waitingJob.add(job);
 		}
 		
-		interPairs.mergeSameKey();
-
-		job.saveInterFile(interPairs);
-		job._type = JobInfo.JobType.MAP_COMPLETE;
-
-		// send complete msg back to master
-		finishJob(job, Message.MessageType.MAP_COMPLETE);
 	}
 
-	public void reduce(JobInfo job) throws RemoteException {
-		PairContainer resultPairs = new PairContainer();
-		MRBase ins = job.getMRInstance();
-		PairContainer interPairs = job.getInterPairs();
-		System.out.println(interPairs.toString());
-		Iterator<Pair> iter = interPairs.getInitialIterator();
-
-		while(iter.hasNext()) {
-			Pair pair = iter.next();
-			String key = pair.getFirst();
-			Iterator<String> second = pair.getSecond();
-			
-			try {
-				ins.reduce(key, second, resultPairs);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+	public synchronized void finishJob(JobInfo job, Message.MessageType type) {
+		if (job._type!=JobInfo.JobType.MAP_COMPLETE && job._type!=JobInfo.JobType.REDUCE_COMPLETE) {
+			System.out.println("WARNING: try to finish an incompleted job!");
+			return;
 		}
-
-		job.saveResultFile(resultPairs);
-		job._type = JobInfo.JobType.REDUCE_COMPLETE;
-
-		// send complete msg back to master
-		finishJob(job, Message.MessageType.REDUCE_COMPLETE);
-	}
-
-	public void finishJob(JobInfo job, Message.MessageType type) {
+		
 		Message fin = new Message();
 		fin._type = type;
 		fin._source = GlobalInfo.sharedInfo()._sid;
 		fin._content = job;
+		
 		try {
 			NetworkHelper.send(_socket, fin);
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.err.println("Broken pipe! Please restart this slave program!");
+			System.exit(-1);
 		}
+		
+		if (job._type == JobInfo.JobType.MAP_COMPLETE) {
+			synchronized(_workingMap) {
+				_workingMap.remove(job);
+			}
+		} else {
+			synchronized(_workingReduce) {
+				_workingReduce.remove(job);
+			}
+		}
+		
+		System.out.println("Finish " + job._taskName + job._jobId + " on " + GlobalInfo.sharedInfo()._sid);
 	}
 }

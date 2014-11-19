@@ -5,6 +5,7 @@ SlaveHosts = 128.237.162.33, 128.237.162.33, \
 			128.237.162.33
 SlaveRootDir = /tmp/unix2/, /tmp/unix3/, \
 			/tmp/unix4/ 
+SlaveCapacity = 5, 5, 5
 
 FileChunkSizeB = 27
 NumberOfReducer= 5

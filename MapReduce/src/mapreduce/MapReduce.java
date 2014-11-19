@@ -109,6 +109,11 @@ public class MapReduce {
 		for (int i = 0; i < slaverootdir.length; ++i) {
 			GlobalInfo.sharedInfo().Host2RootDir.put(i + 1, slaverootdir[i].trim());
 		}
+		
+		String[] slavecapacity = prop.getProperty("SlaveCapacity").split(",");
+		for (int i=0; i<slavecapacity.length; ++i) {
+			GlobalInfo.sharedInfo().SID2Capacity.put(i+1, Integer.parseInt(slavecapacity[i].trim()));
+		}
 
 		GlobalInfo.sharedInfo().FileChunkSizeB = Integer.parseInt(prop
 				.getProperty("FileChunkSizeB"));
