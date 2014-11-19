@@ -31,10 +31,16 @@ public class JobInfo implements Serializable {
 	private static final long serialVersionUID = 5710312452396530832L;
 
 	public enum JobType {
-		NONE, 
+		NONE,
+		
+		MAP_READY,
+		MAP_QUEUE,
 		MAP, 
-		REDUCE,
 		MAP_COMPLETE,
+		
+		REDUCE_READY,
+		REDUCE_QUEUE,
+		REDUCE,
 		REDUCE_COMPLETE
 	};
 
@@ -45,9 +51,6 @@ public class JobInfo implements Serializable {
 	public KPFile _mrFile = null;
 	public ArrayList<KPFile> _inputFile = new ArrayList<KPFile>();
 	public ArrayList<KPFile> _outputFile = new ArrayList<KPFile>();
-	
-	
-	public HashMap<String, KPFile> resultMap = new HashMap<String, KPFile>();
 
 	public JobInfo(int jobId, String taskName) {
 		_jobId = jobId;

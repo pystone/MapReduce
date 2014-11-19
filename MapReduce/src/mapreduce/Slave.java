@@ -34,9 +34,8 @@ public class Slave {
 	}
 
 	public Socket _socket;
-	public ArrayList<JobInfo> _workingMap = new ArrayList<JobInfo>();
-	public ArrayList<JobInfo> _workingReduce = new ArrayList<JobInfo>();
 	public ArrayList<JobInfo> _waitingJob = new ArrayList<JobInfo>();
+	public ArrayList<JobInfo> _workingJob = new ArrayList<JobInfo>();
 
 
 	private Slave() {
@@ -98,9 +97,19 @@ public class Slave {
 	}
 
 	public void newJob(JobInfo job) {
-		System.out.println("get a new job: " + job._jobId + " " + job._taskName
-				+ " " + job._type);
+//		System.out.println("get a new job: " + job._jobId + " " + job._taskName
+//				+ " " + job._type);
 
+		/* update phase */
+		if (job._type == JobInfo.JobType.MAP_READY) {
+			job._type = JobInfo.JobType.MAP_QUEUE;
+		} else if (job._type == JobInfo.JobType.REDUCE_READY) {
+			job._type = JobInfo.JobType.REDUCE_QUEUE;
+		} else {
+			System.out.println("WARNING: try to queue a job that is not in ready phase! (" + job._type + ")");
+			return;
+		}
+		
 		synchronized (_waitingJob) {
 			_waitingJob.add(job);
 		}
@@ -109,7 +118,7 @@ public class Slave {
 
 	public synchronized void finishJob(JobInfo job, Message.MessageType type) {
 		if (job._type!=JobInfo.JobType.MAP_COMPLETE && job._type!=JobInfo.JobType.REDUCE_COMPLETE) {
-			System.out.println("WARNING: try to finish an incompleted job!");
+			System.out.println("WARNING: try to finish an incompleted job! (" + job._type + ")");
 			return;
 		}
 		
@@ -125,16 +134,11 @@ public class Slave {
 			System.exit(-1);
 		}
 		
-		if (job._type == JobInfo.JobType.MAP_COMPLETE) {
-			synchronized(_workingMap) {
-				_workingMap.remove(job);
-			}
-		} else {
-			synchronized(_workingReduce) {
-				_workingReduce.remove(job);
-			}
+		synchronized(_workingJob) {
+			_workingJob.remove(job);
 		}
 		
-		System.out.println("Finish " + job._taskName + job._jobId + " on " + GlobalInfo.sharedInfo()._sid);
+		System.out.println("finish job: " + job._jobId + " " + job._taskName
+				+ " " + job._type);
 	}
 }

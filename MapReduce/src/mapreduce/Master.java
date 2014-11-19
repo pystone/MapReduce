@@ -160,7 +160,7 @@ public class Master {
 			JobInfo job = new JobInfo(++jobId, taskName);
 			job._mrFile = jarFile;
 			job._sid = getFreeSlave();
-			job._type = JobInfo.JobType.MAP;
+			job._type = JobInfo.JobType.MAP_READY;
 
 			ArrayList<KPFile> list = new ArrayList<KPFile>();
 			if(fn.contains("/")) {
@@ -228,7 +228,7 @@ public class Master {
 				JobInfo reduceJob = new JobInfo(idx, task._taskName);
 				reduceJob._mrFile = task._mrFile;
 				reduceJob._sid = getFreeSlave();
-				reduceJob._type = JobInfo.JobType.REDUCE;
+				reduceJob._type = JobInfo.JobType.REDUCE_READY;
 				reduceJob._inputFile = interFiles.get(idx);
 				jobs.put(idx, reduceJob);
 			}

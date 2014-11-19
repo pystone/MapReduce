@@ -12,7 +12,7 @@ public class WordCounter implements MRBase {
 	@Override
 	public void reduce(String key, Iterator<String> values,
 			PairContainer output) {
-		System.out.println("This is reduce method." + key);
+//		System.out.println("This is reduce method." + key);
 		Integer sum = 0;
 		while (values.hasNext()) {
 			sum += Integer.parseInt(values.next());
@@ -23,7 +23,7 @@ public class WordCounter implements MRBase {
 	@Override
 	public void map(String key, String value,
 			PairContainer output) {
-		System.out.println("This is map method. " + key);
+//		System.out.println("This is map method. " + key);
 		
 		Scanner scan = new Scanner(value);
 		scan.useDelimiter("\n");

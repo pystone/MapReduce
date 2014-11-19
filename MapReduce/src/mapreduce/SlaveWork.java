@@ -39,11 +39,8 @@ public class SlaveWork extends Thread {
 				}
 				
 				int curWorking = 0;
-				synchronized (Slave.sharedSlave()._workingMap) {
-					curWorking += Slave.sharedSlave()._workingMap.size();
-				}
-				synchronized (Slave.sharedSlave()._workingReduce) {
-					curWorking += Slave.sharedSlave()._workingReduce.size();
+				synchronized (Slave.sharedSlave()._workingJob) {
+					curWorking += Slave.sharedSlave()._workingJob.size();
 				}
 				
 				if (curWorking > GlobalInfo.sharedInfo().SID2Capacity.get(GlobalInfo.sharedInfo()._sid)) {
@@ -63,10 +60,13 @@ public class SlaveWork extends Thread {
 	}
 	
 	private void work() {
-		if (_job._type == JobInfo.JobType.MAP) {
-			synchronized (Slave.sharedSlave()._workingMap) {
-				Slave.sharedSlave()._workingMap.add(_job);
-			}
+		System.out.println("start a new job: " + _job._jobId + " " + _job._taskName
+		+ " " + _job._type);
+		
+		synchronized (Slave.sharedSlave()._workingJob) {
+			Slave.sharedSlave()._workingJob.add(_job);
+		}
+		if (_job._type == JobInfo.JobType.MAP_QUEUE) {
 			
 			try {
 				map(_job);
@@ -75,10 +75,7 @@ public class SlaveWork extends Thread {
 				_job.serialize();
 				e.printStackTrace();
 			}
-		} else {
-			synchronized (Slave.sharedSlave()._workingReduce) {
-				Slave.sharedSlave()._workingReduce.add(_job);
-			}
+		} else if (_job._type == JobInfo.JobType.REDUCE_QUEUE) {
 			
 			try {
 				reduce(_job);
@@ -87,10 +84,15 @@ public class SlaveWork extends Thread {
 				_job.serialize();
 				e.printStackTrace();
 			}
+		} else {
+			System.out.println("WARNING: try to begin a job that is not in queue phase! (" + _job._type + ")");
+			return;
 		}
 	}
 	
 	public void map(JobInfo job) throws RemoteException {
+		job._type = JobInfo.JobType.MAP;
+		
 		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 
@@ -109,10 +111,11 @@ public class SlaveWork extends Thread {
 	}
 
 	public void reduce(JobInfo job) throws RemoteException {
+		job._type = JobInfo.JobType.REDUCE;
+		
 		PairContainer resultPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 		PairContainer interPairs = job.getInterPairs();
-		System.out.println(interPairs.toString());
 		Iterator<Pair> iter = interPairs.getInitialIterator();
 
 		while(iter.hasNext()) {
