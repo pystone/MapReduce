@@ -27,6 +27,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 	@Override
 	public ArrayList<String> splitFile(String filePath, int chunkSizeB,
 			String directory, String fileName) {
+		// TODO: duplicate the files!
 		try {
 			File file = new File(filePath);
 			Scanner scan = new Scanner(file);

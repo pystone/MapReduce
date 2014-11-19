@@ -115,19 +115,10 @@ public class Master {
 		}
 	}
 
-	// TODO: not sending sid!
-	public void newSlave(Socket socket) {
-		int sid = 1;
+	public void newSlave(Socket socket, int sid) {
+		// TODO: check the incoming slave is on the config file!
 		_slvSocket.put(sid, socket);
-
-		Message hello = new Message();
-		hello._type = Message.MessageType.HELLO;
-		hello._content = sid;
-		try {
-			NetworkHelper.send(socket, hello);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		System.out.println("New slave connected! " + sid);
 	}
 
 	public void newTask(String taskName) {
@@ -205,6 +196,9 @@ public class Master {
 		}
 		task._jobs.put(job._jobId, job);
 		
+//		System.out.println("Job finished!");
+//		job.serialize();
+		
 		// TODO: put into another thread
 		if (task.phaseComplete()) {
 			HashMap<Integer, JobInfo> jobs = new HashMap<Integer, JobInfo>();
@@ -230,7 +224,7 @@ public class Master {
 				reduceJob._mrFile = task._mrFile;
 				reduceJob._sid = getFreeSlave();
 				reduceJob._type = JobInfo.JobType.REDUCE;
-				reduceJob._inputFile = job._outputFile;
+				reduceJob._inputFile = interFiles.get(idx);
 				jobs.put(idx, reduceJob);
 			}
 			

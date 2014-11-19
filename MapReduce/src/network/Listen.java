@@ -38,7 +38,6 @@ public class Listen extends Thread {
                 MsgHandler handler = new MsgHandler(slave);
                 Thread t = new Thread(handler);
                 t.start();
-                Master.sharedMaster().newSlave(slave);
             } catch (IOException e) {
                 e.printStackTrace();
             }

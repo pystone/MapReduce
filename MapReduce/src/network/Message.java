@@ -13,7 +13,7 @@ public class Message implements Serializable {
 	private static final long serialVersionUID = 1114115388371865795L;
 	
 	public enum MessageType {
-		HELLO,
+		HELLO_SID,
 		NEW_JOB,
 		MAP_COMPLETE,
 		REDUCE_COMPLETE,

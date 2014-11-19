@@ -115,7 +115,7 @@ public class KPFile implements Serializable {
 		File file = new File(getLocalAbsPath());
 		file.getParentFile().mkdirs();
 
-		FileOutputStream outStream = new FileOutputStream(file, true);
+		FileOutputStream outStream = new FileOutputStream(file, false);
 		outStream.write(byteArr);
 		outStream.write("\n".getBytes());
 		outStream.close();

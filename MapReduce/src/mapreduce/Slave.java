@@ -54,6 +54,18 @@ public class Slave {
 	public void start(int sid) {
 		GlobalInfo.sharedInfo()._sid = sid;
 		
+		/* tell master my sid */
+		Message msg = new Message();
+		msg._type = Message.MessageType.HELLO_SID;
+		msg._source = sid;
+		try {
+			NetworkHelper.send(_socket, msg);
+		} catch (IOException e1) {
+			System.err.println("Network problem. Failed to tell master my sid " + sid);
+			e1.printStackTrace();
+			System.exit(-1);
+		}
+		
 		/* start HDFS */
 		try {
 			KPFSSlave obj = new KPFSSlave();

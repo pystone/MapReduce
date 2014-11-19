@@ -144,7 +144,7 @@ public class JobInfo implements Serializable {
 			container.mergeSameKey();
 			
 			String interDir = _taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName + "/";
-			String fileName = _taskName + GlobalInfo.sharedInfo()._sid + ".inter"
+			String fileName = _taskName + _jobId + ".inter"
 					+ String.format("%03d", hash);
 			
 			KPFile kpfile = new KPFile(interDir, fileName);
@@ -189,5 +189,15 @@ public class JobInfo implements Serializable {
 			ret.put(Integer.parseInt(idxStr), kp);
 		}
 		return ret;
+	}
+	
+	public void serialize() {
+		System.out.println("TaskName: " + _taskName);
+		System.out.println("JobID: " + _jobId);
+		System.out.println("Type: " + _type.toString());
+		System.out.println("Output Files: ");
+		for (KPFile file: _outputFile) {
+			System.out.println("\t" + file.getRelPath());
+		}
 	}
 }

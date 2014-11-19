@@ -37,21 +37,18 @@ public class MsgHandler extends Thread {
 					}
 					switch (msg._type) {
 					/* master -> slave */
-					case HELLO:
-//						GlobalInfo.sharedInfo()._sid = ((Integer)(msg._content)).intValue();
-//						System.out.println("Sid got: " + ((Integer)(msg._content)).intValue());
-						System.out.println("Connection established");
-						break;
 					case NEW_JOB:
-						/* master -> slave */
 						Slave.sharedSlave().newJob((JobInfo)msg._content);
 						break;
+						
+					/* slave -> master */
+					case HELLO_SID:
+						Master.sharedMaster().newSlave(_socket, msg._source);
+						break;
 					case MAP_COMPLETE:
-						/* slave -> master */
 						Master.sharedMaster().checkMapCompleted((JobInfo)msg._content);
 						break;
 					case REDUCE_COMPLETE:
-						/* slave -> master */
 						Master.sharedMaster().checkReduceCompleted((JobInfo)msg._content);
 						break;
 					}
