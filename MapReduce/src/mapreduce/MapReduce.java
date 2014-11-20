@@ -82,6 +82,7 @@ public class MapReduce {
 			Master.sharedMaster().start();
 		} else if (mstOrSlv.equalsIgnoreCase("s")) {
 			System.out.println("Slave");
+			GlobalInfo.sharedInfo()._sid = Integer.parseInt(opt);
 			Slave.sharedSlave().start(Integer.parseInt(opt));
 		} else {
 			System.out.println("This machine is not included in config file!");

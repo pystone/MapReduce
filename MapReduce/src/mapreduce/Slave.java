@@ -7,6 +7,7 @@ import hdfs.KPFSSlave;
 import hdfs.KPFSSlaveInterface;
 
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -17,13 +18,14 @@ import java.util.ArrayList;
 import jobcontrol.JobInfo;
 import network.Message;
 import network.MsgHandler;
+import network.NetworkFailInterface;
 import network.NetworkHelper;
 
 /**
  * @author PY
  * 
  */
-public class Slave {
+public class Slave implements NetworkFailInterface {
 	private static Slave _sharedSlave;
 
 	public static Slave sharedSlave() {
@@ -43,9 +45,9 @@ public class Slave {
 		try {
 			_socket = new Socket(GlobalInfo.sharedInfo().MasterHost,
 					GlobalInfo.sharedInfo().MasterPort);
-			MsgHandler handler = new MsgHandler(_socket);
-			Thread t = new Thread(handler);
-			t.start();
+			ObjectOutputStream out = new ObjectOutputStream(_socket.getOutputStream());
+			out.writeObject(GlobalInfo.sharedInfo()._sid);
+			
 		} catch (IOException e) {
 			System.out.println("Connection failed!");
 			e.printStackTrace();
@@ -55,6 +57,10 @@ public class Slave {
 
 	public void start(int sid) {
 		GlobalInfo.sharedInfo()._sid = sid;
+		
+		MsgHandler handler = new MsgHandler(sid, _socket, this);
+		Thread t = new Thread(handler);
+		t.start();
 		
 		/* tell master my sid */
 		Message msg = new Message();
@@ -147,35 +153,39 @@ public class Slave {
 			return;
 		}
 		
+		updateJobInfo(job, Message.MessageType.JOB_UPDATE);
+		
 		synchronized (_waitingJob) {
 			_waitingJob.add(job);
 		}
 		
 	}
+	
+	public synchronized void updateJobInfo(JobInfo job, Message.MessageType type) {
+		Message msg = new Message(GlobalInfo.sharedInfo()._sid, type);
+		msg._content = job;
+		synchronized (job) {
+			try {
+				NetworkHelper.send(_socket, msg);
+			} catch (IOException e) {
+				System.err.println("Connection broken. Please restart this slave!");
+				System.exit(-1);
+			}
+		}
+		
+		if (job._type==JobInfo.JobType.MAP_COMPLETE || job._type==JobInfo.JobType.REDUCE_COMPLETE) {
+			synchronized(_workingJob) {
+				_workingJob.remove(job);
+			}
+			
+			System.out.println("finish job: " + job._jobId + " " + job._taskName
+					+ " " + job._type);
+		}
+	}
 
-	public synchronized void finishJob(JobInfo job, Message.MessageType type) {
-		if (job._type!=JobInfo.JobType.MAP_COMPLETE && job._type!=JobInfo.JobType.REDUCE_COMPLETE) {
-			System.out.println("WARNING: try to finish an incompleted job! (" + job._type + ")");
-			return;
-		}
+	@Override
+	public void networkFail(int sid) {
+		// TODO Auto-generated method stub
 		
-		Message fin = new Message();
-		fin._type = type;
-		fin._source = GlobalInfo.sharedInfo()._sid;
-		fin._content = job;
-		
-		try {
-			NetworkHelper.send(_socket, fin);
-		} catch (IOException e) {
-			System.err.println("Broken pipe! Please restart this slave program!");
-			System.exit(-1);
-		}
-		
-		synchronized(_workingJob) {
-			_workingJob.remove(job);
-		}
-		
-		System.out.println("finish job: " + job._jobId + " " + job._taskName
-				+ " " + job._type);
 	}
 }

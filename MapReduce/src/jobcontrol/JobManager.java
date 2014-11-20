@@ -29,18 +29,32 @@ public class JobManager {
 	}
 	
 	public void sendJob(JobInfo job) {
-		_sendingJobs.add(job);
+		synchronized (_sendingJobs) {
+			_sendingJobs.add(job);
+		}
 	}
 	
 	public void sendJobs(Collection<? extends JobInfo> jobs) {
-		_sendingJobs.addAll(jobs);
+		synchronized (_sendingJobs) {
+			_sendingJobs.addAll(jobs);
+		}
 	}
 	
 	public boolean isSendingQueueEmpty() {
-		return _sendingJobs.isEmpty();
+		synchronized (_sendingJobs) {
+			return _sendingJobs.isEmpty();
+		}
 	}
 	
 	public JobInfo getNextJob() {
-		return _sendingJobs.poll();
+		synchronized (_sendingJobs) {
+			return _sendingJobs.poll();	
+		}
+	}
+	
+	public void clearAllJobs() {
+		synchronized (_sendingJobs) {
+			_sendingJobs.clear();
+		}
 	}
 }

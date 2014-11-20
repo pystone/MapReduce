@@ -21,20 +21,23 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import jobcontrol.JobInfo;
 import jobcontrol.JobManager;
 import jobcontrol.Task;
 import network.Listen;
 import network.Message;
+import network.NetworkFailInterface;
 import network.NetworkHelper;
 
 /**
  * @author PY
  * 
  */
-public class Master {
+public class Master implements NetworkFailInterface {
 	private static Master _sharedMaster;
 
 	public static Master sharedMaster() {
@@ -150,7 +153,7 @@ public class Master {
 	}
 	
 	public void slaveHeartbeat(int sid, SlaveTracker tracker) {
-		System.out.println("heartbeat from " + sid);
+//		System.out.println("heartbeat from " + sid);
 		synchronized (_slvTracker) {
 			_slvTracker.put(sid, tracker);
 		}
@@ -228,21 +231,31 @@ public class Master {
 				e.printStackTrace();
 			}
 
-			currentTask._jobs.put(jobId, job);
+			currentTask._mapJobs.put(jobId, job);
 		}
 		
 		
 		currentTask._phase = Task.TaskPhase.MAP;
-		JobManager.sharedJobManager().sendJobs(currentTask._jobs.values());
+		JobManager.sharedJobManager().sendJobs(currentTask._mapJobs.values());
 	}
 
 	public void checkMapCompleted(JobInfo job) {
 		Task task = _tasks.get(job._taskName);
 		if (task == null) {
-			System.out.println("WARNING: receiving a job that does not belong to any working task!");
+			System.out.println("WARNING [checkMapCompleted]: receiving a job that does not belong to any working task!");
 			return;
 		}
-		task._jobs.put(job._jobId, job);
+		JobInfo oldJob = task._mapJobs.get(job._jobId);
+		if (oldJob == null) {
+			return;
+		}
+		if (task._phase!=Task.TaskPhase.MAP || oldJob==null || oldJob._type!=JobInfo.JobType.MAP || oldJob._sid!=job._sid) {
+			System.out.println("Getting an old finished job. Ignoring it. " + job._taskName + job._jobId + job._type + " from " + job._sid);
+			System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
+			return;
+		}
+		
+		task._mapJobs.put(job._jobId, job);
 		
 //		System.out.println("Job finished!");
 //		job.serialize();
@@ -253,7 +266,7 @@ public class Master {
 			
 			HashMap<Integer, ArrayList<KPFile>> interFiles = new HashMap<Integer, ArrayList<KPFile>>();
 			
-			for (JobInfo ji: task._jobs.values()) {
+			for (JobInfo ji: task._mapJobs.values()) {
 				HashMap<Integer, KPFile> files = ji.getInterFilesWithIndex();
 				for (Integer idx: files.keySet()) {
 					ArrayList<KPFile> farr = interFiles.get(idx);
@@ -275,8 +288,8 @@ public class Master {
 			}
 			
 			task._phase = Task.TaskPhase.REDUCE;
-			task._jobs = jobs;
-			JobManager.sharedJobManager().sendJobs(task._jobs.values());
+			task._reduceJobs = jobs;
+			JobManager.sharedJobManager().sendJobs(task._reduceJobs.values());
 		}
 		
 	}
@@ -284,26 +297,107 @@ public class Master {
 	public void checkReduceCompleted(JobInfo job) {
 		Task task = _tasks.get(job._taskName);
 		if (task == null) {
-			System.out.println("WARNING: receiving a job that does not belong to any working task!");
+			System.out.println("WARNING [checkReduceCompleted]: receiving a job that does not belong to any working task!");
 			return;
 		}
-		task._jobs.put(job._jobId, job);
+		
+		JobInfo oldJob = task._reduceJobs.get(job._jobId);
+		if (oldJob == null) {
+			return;
+		}
+		if (task._phase!=Task.TaskPhase.REDUCE || oldJob==null || oldJob._type!=JobInfo.JobType.REDUCE || oldJob._sid!=job._sid) {
+			System.out.println("Getting an old finished job. Ignoring it. " + job._taskName + job._jobId + job._type + " from " + job._sid);
+			System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
+			return;
+		}
+		
+		task._reduceJobs.put(job._jobId, job);
 		
 		if (task.phaseComplete()) {
+			task._phase = Task.TaskPhase.FINISH;
+			_tasks.remove(task);
 			System.out.println("Task " + task._taskName + " is completed! The output files are at: ");
-			for (JobInfo ji: task._jobs.values()) {
+			for (JobInfo ji: task._reduceJobs.values()) {
 				System.out.println("\tSlave " + ji._sid + ": " + ji._outputFile.get(0).getRelPath());
 			}
 		}
 		
 		
 	}
+	
+	public void jobUpdate(JobInfo job) {
+		Task task = _tasks.get(job._taskName);
+		if (task == null) {
+			System.out.println("WARNING [jobUpdate]: receiving a job that does not belong to any working task!");
+			return;
+		}
+		
+		JobInfo oldJob = null;
+		if (task._phase == Task.TaskPhase.MAP) {
+			oldJob = task._mapJobs.get(job._jobId);
+		} else if (task._phase == Task.TaskPhase.REDUCE) {
+			oldJob = task._reduceJobs.get(job._jobId);
+		}
+		
+		if (oldJob==null || oldJob._sid!=job._sid) {
+			System.out.println("Getting an old finished job. Ignoring it. " + job._taskName + job._jobId + job._type + " from " + job._sid);
+			if (oldJob != null) {
+				System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
+			}
+			return;
+		}
+		
+		System.out.println("[jobUpdate] " + job._taskName + job._jobId + job._type);
+		if (task._phase == Task.TaskPhase.MAP) {
+			task._mapJobs.put(job._jobId, job);
+		} else if (task._phase == Task.TaskPhase.REDUCE) {
+			task._reduceJobs.put(job._jobId, job);
+		}
+	}
 
 	/* load balancer */
-	public int getFreeSlave() {
+	public synchronized int getFreeSlave() {
+		int slv = 0;
+		synchronized (_slvSocket) {
+			if ((slv = _slvSocket.size()) == 0) {
+				System.out.println("Currently all slaves are down. Please restart this system!");
+				System.exit(-1);
+			}
+		}
 		Random rand = new Random();
-		int slv = rand.nextInt(_slvSocket.size());
-		Integer sid = (Integer) _slvSocket.keySet().toArray()[slv];
+		slv = rand.nextInt(slv);
+		
+		Integer sid = 0;
+		synchronized (_slvSocket) {
+			sid = (Integer) _slvSocket.keySet().toArray()[slv];
+		}
 		return sid.intValue();
+	}
+
+	@Override
+	public void networkFail(int sid) {
+		System.out.println("networkFail: " + sid);
+		if (_slvSocket.containsKey(sid) == false) {
+			System.out.println("WARNING! no such sid.");
+			return;
+		}
+		
+		System.out.println("ATTENTION: slave " + sid + " is down! Rescheduling all tasks...");
+		
+		_slvSocket.remove(sid);
+		
+		// TODO: let the KPFS do file copy
+		
+		for (Task task: _tasks.values()) {
+			task.reset();
+			for (JobInfo job: task._mapJobs.values()) {
+				job._sid = getFreeSlave();
+			}
+			
+			task._phase = Task.TaskPhase.MAP;
+			JobManager.sharedJobManager().sendJobs(task._mapJobs.values());
+			System.out.println("\tReschedule " + task._taskName);
+		}
+		
 	}
 }

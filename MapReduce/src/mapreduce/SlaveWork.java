@@ -91,7 +91,10 @@ public class SlaveWork extends Thread {
 	}
 	
 	public void map(JobInfo job) throws RemoteException {
-		job._type = JobInfo.JobType.MAP;
+		synchronized (job) {
+			job._type = JobInfo.JobType.MAP;
+		}
+		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
 		
 		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
@@ -107,11 +110,14 @@ public class SlaveWork extends Thread {
 		job._type = JobInfo.JobType.MAP_COMPLETE;
 
 		// send complete msg back to master
-		Slave.sharedSlave().finishJob(job, Message.MessageType.MAP_COMPLETE);
+		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.MAP_COMPLETE);
 	}
 
 	public void reduce(JobInfo job) throws RemoteException {
-		job._type = JobInfo.JobType.REDUCE;
+		synchronized (job) {
+			job._type = JobInfo.JobType.REDUCE;
+		}
+		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
 		
 		PairContainer resultPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
@@ -134,7 +140,7 @@ public class SlaveWork extends Thread {
 		job._type = JobInfo.JobType.REDUCE_COMPLETE;
 
 		// send complete msg back to master
-		Slave.sharedSlave().finishJob(job, Message.MessageType.REDUCE_COMPLETE);
+		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.REDUCE_COMPLETE);
 	}
 	
 }
