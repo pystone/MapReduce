@@ -103,13 +103,22 @@ public class Slave {
 			}
 			
 			try {
-				Thread.sleep(2000);
+				Thread.sleep(200);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
+			SlaveTracker slvTracker = new SlaveTracker(GlobalInfo.sharedInfo()._sid);
+			synchronized (_waitingJob) {
+				slvTracker._queueingCnt = _waitingJob.size();
+			}
+			synchronized (_workingJob) {
+				slvTracker._workingCnt = _workingJob.size();
+			}
+			
 			Message heartbeat = new Message(GlobalInfo.sharedInfo()._sid, Message.MessageType.SLAVE_HEARTBEAT);
+			heartbeat._content = slvTracker;
 			
 			try {
 				NetworkHelper.send(_socket, heartbeat);

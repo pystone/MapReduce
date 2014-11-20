@@ -15,22 +15,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
-import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import jobcontrol.JobInfo;
 import jobcontrol.JobManager;
 import jobcontrol.Task;
-import jobcontrol.UnfinishedJobs;
 import network.Listen;
 import network.Message;
 import network.NetworkHelper;
@@ -51,8 +46,7 @@ public class Master {
 
 	public HashMap<Integer, Socket> _slvSocket = new HashMap<Integer, Socket>();
 	public volatile HashMap<String, Task> _tasks = new HashMap<String, Task>();
-	private volatile UnfinishedJobs _unfinishedMap = new UnfinishedJobs();
-	private volatile UnfinishedJobs _unfinishedReduce = new UnfinishedJobs();
+	private volatile HashMap<Integer, SlaveTracker> _slvTracker = new HashMap<Integer, SlaveTracker>();
 
 
 	private Master() {
@@ -113,7 +107,29 @@ public class Master {
 		case "new":
 			newTask(cmd[1]);
 			break;
+		case "showslave":
+			showSlave();
+			break;
+		case "showalltask":
+			showAllTask();
+			break;
+		case "show":
+			showTask(cmd[2]);
+			break;
 		}
+			
+	}
+	
+	private void showSlave() {
+		
+	}
+	
+	private void showAllTask() {
+		
+	}
+	
+	private void showTask(String taskName) {
+		
 	}
 
 	public void newSlave(Socket socket, int sid) {
@@ -133,8 +149,11 @@ public class Master {
 		System.out.println(sid + "is down...");
 	}
 	
-	public void slaveHeartbeat(int sid, Object[] beat) {
+	public void slaveHeartbeat(int sid, SlaveTracker tracker) {
 		System.out.println("heartbeat from " + sid);
+		synchronized (_slvTracker) {
+			_slvTracker.put(sid, tracker);
+		}
 	}
 
 	public void newTask(String taskName) {
@@ -231,8 +250,6 @@ public class Master {
 		// TODO: put into another thread
 		if (task.phaseComplete()) {
 			HashMap<Integer, JobInfo> jobs = new HashMap<Integer, JobInfo>();
-			
-			String interDir = task._taskName + "/" + GlobalInfo.sharedInfo().IntermediateDirName + "/";
 			
 			HashMap<Integer, ArrayList<KPFile>> interFiles = new HashMap<Integer, ArrayList<KPFile>>();
 			

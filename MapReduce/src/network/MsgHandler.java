@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.net.Socket;
 
 import jobcontrol.JobInfo;
-import mapreduce.GlobalInfo;
 import mapreduce.Master;
 import mapreduce.Slave;
+import mapreduce.SlaveTracker;
 
 /**
  * Used by master.
@@ -52,7 +52,7 @@ public class MsgHandler extends Thread {
 					Master.sharedMaster().newSlave(_socket, msg._source);
 					break;
 				case SLAVE_HEARTBEAT:
-					Master.sharedMaster().slaveHeartbeat(msg._source, (Object[])msg._content);
+					Master.sharedMaster().slaveHeartbeat(msg._source, (SlaveTracker)msg._content);
 					break;
 				case MAP_COMPLETE:
 					Master.sharedMaster().checkMapCompleted((JobInfo)msg._content);

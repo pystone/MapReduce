@@ -77,13 +77,9 @@ public class MapReduce {
 
 		loadConfig(prop);
 
-		// if (mstOrSlv.equalsIgnoreCase("m") &&
-		// GlobalInfo.sharedInfo().isMaster()) {
 		if (mstOrSlv.equalsIgnoreCase("m")) {
 			System.out.println("Master");
 			Master.sharedMaster().start();
-			// } else if (mstOrSlv.equalsIgnoreCase("s") &&
-			// GlobalInfo.sharedInfo().isSlave()) {
 		} else if (mstOrSlv.equalsIgnoreCase("s")) {
 			System.out.println("Slave");
 			Slave.sharedSlave().start(Integer.parseInt(opt));
