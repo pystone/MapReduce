@@ -94,6 +94,23 @@ public class KPFSMaster implements KPFSMasterInterface {
 		}
 	}
 	
+	public void removeFileInSlave(int sid) {
+		ArrayList<String> toDel = new ArrayList<String>();
+		
+		for (String relPath: _mapTbl.keySet()) {
+			ArrayList<KPFSFileInfo> fiArr = _mapTbl.get(relPath);
+			for (KPFSFileInfo fi: fiArr) {
+				if (fi._sid == sid) {
+					toDel.add(relPath);
+				}
+			}
+		}
+		
+		for (String relPath: toDel) {
+			removeFileLocation(relPath, sid);
+		}
+	}
+	
 	
 	@Override
 	public synchronized KPFSFileInfo getFileLocation(String relPath) {

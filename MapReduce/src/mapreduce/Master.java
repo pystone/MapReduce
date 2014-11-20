@@ -249,18 +249,20 @@ public class Master implements NetworkFailInterface {
 		if (oldJob == null) {
 			return;
 		}
-		if (task._phase!=Task.TaskPhase.MAP || oldJob==null || oldJob._type!=JobInfo.JobType.MAP || oldJob._sid!=job._sid) {
+		if (task._phase!=Task.TaskPhase.MAP || oldJob==null || oldJob._sid!=job._sid) {
 			System.out.println("Getting an old finished job. Ignoring it. " + job._taskName + job._jobId + job._type + " from " + job._sid);
-			System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
+			if (oldJob != null) {
+				System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
+			}
 			return;
 		}
+
 		
 		task._mapJobs.put(job._jobId, job);
 		
 //		System.out.println("Job finished!");
 //		job.serialize();
 		
-		// TODO: put into another thread
 		if (task.phaseComplete()) {
 			HashMap<Integer, JobInfo> jobs = new HashMap<Integer, JobInfo>();
 			
@@ -305,9 +307,11 @@ public class Master implements NetworkFailInterface {
 		if (oldJob == null) {
 			return;
 		}
-		if (task._phase!=Task.TaskPhase.REDUCE || oldJob==null || oldJob._type!=JobInfo.JobType.REDUCE || oldJob._sid!=job._sid) {
+		if (task._phase!=Task.TaskPhase.REDUCE || oldJob==null || oldJob._sid!=job._sid) {
 			System.out.println("Getting an old finished job. Ignoring it. " + job._taskName + job._jobId + job._type + " from " + job._sid);
-			System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
+			if (oldJob != null) {
+				System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
+			}
 			return;
 		}
 		
@@ -347,7 +351,7 @@ public class Master implements NetworkFailInterface {
 			return;
 		}
 		
-		System.out.println("[jobUpdate] " + job._taskName + job._jobId + job._type);
+		System.out.println("[jobUpdate] " + job._taskName + job._jobId + job._type + " from " + job._sid);
 		if (task._phase == Task.TaskPhase.MAP) {
 			task._mapJobs.put(job._jobId, job);
 		} else if (task._phase == Task.TaskPhase.REDUCE) {
@@ -382,11 +386,10 @@ public class Master implements NetworkFailInterface {
 			return;
 		}
 		
-		System.out.println("ATTENTION: slave " + sid + " is down! Rescheduling all tasks...");
-		
 		_slvSocket.remove(sid);
 		
 		// TODO: let the KPFS do file copy
+		((KPFSMaster) _kpfsMaster).removeFileInSlave(sid);
 		
 		for (Task task: _tasks.values()) {
 			task.reset();
@@ -395,9 +398,24 @@ public class Master implements NetworkFailInterface {
 			}
 			
 			task._phase = Task.TaskPhase.MAP;
-			JobManager.sharedJobManager().sendJobs(task._mapJobs.values());
+			
 			System.out.println("\tReschedule " + task._taskName);
 		}
 		
+		System.out.println("ATTENTION: slave " + sid + " is down! Reschedule all tasks after 5s ...");
+		
+		for (int i=5; i>=1; --i) {
+			System.out.println(i+"...");
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		System.out.println("Rescheduling...");
+		for (Task task: _tasks.values()) {
+			JobManager.sharedJobManager().sendJobs(task._mapJobs.values());
+		}
 	}
 }

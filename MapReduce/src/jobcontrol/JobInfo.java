@@ -116,6 +116,9 @@ public class JobInfo implements Serializable {
 
 		for (KPFile kpfile : _inputFile) {
 			String fileStr = kpfile.getFileString();
+			if (fileStr == null) {
+				return null;
+			}
 			ret.restoreFromString(fileStr);
 		}
 		

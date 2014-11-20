@@ -90,17 +90,21 @@ public class SlaveWork extends Thread {
 		}
 	}
 	
-	public void map(JobInfo job) throws RemoteException {
+	public boolean map(JobInfo job) throws RemoteException {
 		synchronized (job) {
 			job._type = JobInfo.JobType.MAP;
 		}
-		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
+//		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
 		
 		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 
 		for (int i=0; i<job._inputFile.size(); ++i) {
 			String content = job._inputFile.get(i).getFileString();
+			if (content == null) {
+				System.out.println("Failed to get file " + job._inputFile.get(i).getRelPath() + ". Aborting this job.");
+				return false;
+			}
 			ins.map(job._inputFile.get(i)._fileName, content, interPairs);
 		}
 		
@@ -111,17 +115,23 @@ public class SlaveWork extends Thread {
 
 		// send complete msg back to master
 		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.MAP_COMPLETE);
+		
+		return true;
 	}
 
-	public void reduce(JobInfo job) throws RemoteException {
+	public boolean reduce(JobInfo job) throws RemoteException {
 		synchronized (job) {
 			job._type = JobInfo.JobType.REDUCE;
 		}
-		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
+//		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
 		
 		PairContainer resultPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
 		PairContainer interPairs = job.getInterPairs();
+		if (interPairs == null) {
+			System.out.println("Failed to read inter files. Aborting this job.");
+			return false;
+		}
 		Iterator<Pair> iter = interPairs.getInitialIterator();
 
 		while(iter.hasNext()) {
@@ -141,6 +151,8 @@ public class SlaveWork extends Thread {
 
 		// send complete msg back to master
 		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.REDUCE_COMPLETE);
+		
+		return true;
 	}
 	
 }

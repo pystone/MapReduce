@@ -153,7 +153,7 @@ public class Slave implements NetworkFailInterface {
 			return;
 		}
 		
-		updateJobInfo(job, Message.MessageType.JOB_UPDATE);
+//		updateJobInfo(job, Message.MessageType.JOB_UPDATE);
 		
 		synchronized (_waitingJob) {
 			_waitingJob.add(job);
@@ -162,6 +162,9 @@ public class Slave implements NetworkFailInterface {
 	}
 	
 	public synchronized void updateJobInfo(JobInfo job, Message.MessageType type) {
+		if (!(type == Message.MessageType.MAP_COMPLETE || type == Message.MessageType.REDUCE_COMPLETE)) {
+			return;
+		}
 		Message msg = new Message(GlobalInfo.sharedInfo()._sid, type);
 		msg._content = job;
 		synchronized (job) {

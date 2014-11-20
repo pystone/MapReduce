@@ -59,7 +59,7 @@ public class MsgHandler extends Thread {
 					Master.sharedMaster().slaveHeartbeat(msg._source, (SlaveTracker)msg._content);
 					break;
 				case JOB_UPDATE:
-					Master.sharedMaster().jobUpdate((JobInfo) msg._content);
+//					Master.sharedMaster().jobUpdate((JobInfo) msg._content);
 					break;
 				case MAP_COMPLETE:
 					Master.sharedMaster().checkMapCompleted((JobInfo)msg._content);
@@ -72,7 +72,7 @@ public class MsgHandler extends Thread {
 			} catch (ClassNotFoundException | IOException e) {
 				connAlive = false;
 				System.out.println("one conn down " + _sid);
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
     	}
     	_failDele.networkFail(_sid);
