@@ -30,6 +30,9 @@ public class KPFile implements Serializable {
 	public String getFileString() throws RemoteException {
 		/* retrieve location information from data master */
 		KPFSMasterInterface masterService = NetworkHelper.getMasterService();
+		if (masterService == null) {
+			return null;
+		}
 		KPFSFileInfo info = masterService.getFileLocation(getRelPath());
 		
 		if (info == null) {
@@ -38,6 +41,9 @@ public class KPFile implements Serializable {
 
 		/* retrieve file content from actual data node */
 		KPFSSlaveInterface slaveService = NetworkHelper.getSlaveService(info._sid);
+		if (slaveService == null) {
+			return null;
+		}
 		String content = null;
 		try {
 			content = slaveService.getFileString(getRelPath());
@@ -51,10 +57,16 @@ public class KPFile implements Serializable {
 
 	public byte[] getFileBytes() throws RemoteException {
 		KPFSMasterInterface masterService = NetworkHelper.getMasterService();
+		if (masterService == null) {
+			return null;
+		}
 		KPFSFileInfo info = masterService.getFileLocation(getRelPath());
 
 		/* retrieve file content from actual data node */
 		KPFSSlaveInterface slaveService = NetworkHelper.getSlaveService(info._sid);
+		if (slaveService == null) {
+			return null;
+		}
 		byte[] content = null;
 		try {
 			content = slaveService.getFileBytes(getRelPath());

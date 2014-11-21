@@ -41,7 +41,6 @@ public class Slave implements NetworkFailInterface {
 	private boolean _ready = false;
 
 	private Slave() {
-
 		try {
 			_socket = new Socket(GlobalInfo.sharedInfo().MasterHost,
 					GlobalInfo.sharedInfo().MasterPort);
@@ -111,7 +110,6 @@ public class Slave implements NetworkFailInterface {
 			try {
 				Thread.sleep(200);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
@@ -153,8 +151,6 @@ public class Slave implements NetworkFailInterface {
 			return;
 		}
 		
-//		updateJobInfo(job, Message.MessageType.JOB_UPDATE);
-		
 		synchronized (_waitingJob) {
 			_waitingJob.add(job);
 		}
@@ -162,9 +158,6 @@ public class Slave implements NetworkFailInterface {
 	}
 	
 	public synchronized void updateJobInfo(JobInfo job, Message.MessageType type) {
-		if (!(type == Message.MessageType.MAP_COMPLETE || type == Message.MessageType.REDUCE_COMPLETE)) {
-			return;
-		}
 		Message msg = new Message(GlobalInfo.sharedInfo()._sid, type);
 		msg._content = job;
 		synchronized (job) {
@@ -188,7 +181,7 @@ public class Slave implements NetworkFailInterface {
 
 	@Override
 	public void networkFail(int sid) {
-		// TODO Auto-generated method stub
-		
+		System.err.println("Connection broken. Please restart this slave!");
+		System.exit(-1);
 	}
 }

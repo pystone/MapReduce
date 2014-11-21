@@ -94,7 +94,6 @@ public class SlaveWork extends Thread {
 		synchronized (job) {
 			job._type = JobInfo.JobType.MAP;
 		}
-//		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
 		
 		PairContainer interPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();
@@ -123,7 +122,6 @@ public class SlaveWork extends Thread {
 		synchronized (job) {
 			job._type = JobInfo.JobType.REDUCE;
 		}
-//		Slave.sharedSlave().updateJobInfo(job, Message.MessageType.JOB_UPDATE);
 		
 		PairContainer resultPairs = new PairContainer();
 		MRBase ins = job.getMRInstance();

@@ -82,7 +82,13 @@ public class MapReduce {
 			Master.sharedMaster().start();
 		} else if (mstOrSlv.equalsIgnoreCase("s")) {
 			System.out.println("Slave");
-			GlobalInfo.sharedInfo()._sid = Integer.parseInt(opt);
+			int sid = Integer.parseInt(opt);
+			String confIP = GlobalInfo.sharedInfo().SID2Host.get(sid);
+			if (confIP==null || (confIP.equals(GlobalInfo.sharedInfo().getLocalHost()) == false)) {
+				System.err.println("This host is not configured as a slave of sid " + sid + " in config.txt!" );
+				System.exit(-1);
+			}
+			GlobalInfo.sharedInfo()._sid = sid;
 			Slave.sharedSlave().start(Integer.parseInt(opt));
 		} else {
 			System.out.println("This machine is not included in config file!");

@@ -96,7 +96,6 @@ public class Master implements NetworkFailInterface {
 			try {
 				line = br.readLine();
 				String[] cmd = line.split(" ");
-				System.out.println(cmd[0]);
 				inputHandler(cmd);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -118,6 +117,14 @@ public class Master implements NetworkFailInterface {
 			break;
 		case "show":
 			showTask(cmd[2]);
+			break;
+		case "debug":
+			for (Integer sid: _slvSocket.keySet()) {
+				System.out.println(sid);
+			}
+			break;
+		case "fsdebug":
+			((KPFSMaster) _kpfsMaster).debug();
 			break;
 		}
 			
@@ -153,7 +160,6 @@ public class Master implements NetworkFailInterface {
 	}
 	
 	public void slaveHeartbeat(int sid, SlaveTracker tracker) {
-//		System.out.println("heartbeat from " + sid);
 		synchronized (_slvTracker) {
 			_slvTracker.put(sid, tracker);
 		}
@@ -199,7 +205,7 @@ public class Master implements NetworkFailInterface {
 		currentTask._mrFile = jarFile;
 		
 		ArrayList<String> files = ((KPFSMaster) _kpfsMaster).splitFile(inputPath,
-					GlobalInfo.sharedInfo().FileChunkSizeB, chunkDir, taskName);
+					GlobalInfo.sharedInfo().FileChunkSizeB, taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/", taskName);
 		
 		int jobId = 0;
 		for (String fn : files) {
@@ -213,13 +219,6 @@ public class Master implements NetworkFailInterface {
 				String[] parts = fn.split("/");
 				KPFile kpfile = new KPFile(taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/", parts[parts.length - 1]);
 				list.add(kpfile);
-				try {
-					/* 0 is the id of master */
-					_kpfsMaster.addFileLocation(kpfile.getRelPath(), 0, (new File(fn)).length());
-				} catch (RemoteException e) {
-					System.err.println("ERROR: failed to add chunk file (" + fn + ") into data master!");
-					e.printStackTrace();
-				}
 			}
 			job._inputFile = list;
 			
@@ -328,36 +327,6 @@ public class Master implements NetworkFailInterface {
 		
 		
 	}
-	
-	public void jobUpdate(JobInfo job) {
-		Task task = _tasks.get(job._taskName);
-		if (task == null) {
-			System.out.println("WARNING [jobUpdate]: receiving a job that does not belong to any working task!");
-			return;
-		}
-		
-		JobInfo oldJob = null;
-		if (task._phase == Task.TaskPhase.MAP) {
-			oldJob = task._mapJobs.get(job._jobId);
-		} else if (task._phase == Task.TaskPhase.REDUCE) {
-			oldJob = task._reduceJobs.get(job._jobId);
-		}
-		
-		if (oldJob==null || oldJob._sid!=job._sid) {
-			System.out.println("Getting an old finished job. Ignoring it. " + job._taskName + job._jobId + job._type + " from " + job._sid);
-			if (oldJob != null) {
-				System.out.println("\tOld job: " + oldJob._taskName + oldJob._jobId + oldJob._type + " from " + oldJob._sid);
-			}
-			return;
-		}
-		
-		System.out.println("[jobUpdate] " + job._taskName + job._jobId + job._type + " from " + job._sid);
-		if (task._phase == Task.TaskPhase.MAP) {
-			task._mapJobs.put(job._jobId, job);
-		} else if (task._phase == Task.TaskPhase.REDUCE) {
-			task._reduceJobs.put(job._jobId, job);
-		}
-	}
 
 	/* load balancer */
 	public synchronized int getFreeSlave() {
@@ -388,8 +357,21 @@ public class Master implements NetworkFailInterface {
 		
 		_slvSocket.remove(sid);
 		
-		// TODO: let the KPFS do file copy
-		((KPFSMaster) _kpfsMaster).removeFileInSlave(sid);
+		/* remove the metadata of affected files and duplicate them */
+		ArrayList<String> deletedFiles = ((KPFSMaster) _kpfsMaster).removeFileInSlave(sid);
+		ArrayList<KPFile> toDup = new ArrayList<KPFile>();
+		for (String filePath: deletedFiles) {
+			String relDir = filePath.substring(0, filePath.lastIndexOf("/") + 1);
+			String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+			toDup.add(new KPFile(relDir, fileName));
+			System.out.println("File to duplicate: " + filePath);
+		}
+		try {
+			((KPFSMaster) _kpfsMaster).duplicateFiles(toDup, _slvSocket.keySet().toArray());
+		} catch (IOException | KPFSException e) {
+			e.printStackTrace();
+		}
+		
 		
 		for (Task task: _tasks.values()) {
 			task.reset();
@@ -401,7 +383,11 @@ public class Master implements NetworkFailInterface {
 			
 			System.out.println("\tReschedule " + task._taskName);
 		}
-		
+		if (_tasks.isEmpty()) {
+			System.out.println("ATTENTION: slave " + sid + " is down!");
+			return;
+		}
+
 		System.out.println("ATTENTION: slave " + sid + " is down! Reschedule all tasks after 5s ...");
 		
 		for (int i=5; i>=1; --i) {
@@ -415,6 +401,7 @@ public class Master implements NetworkFailInterface {
 		
 		System.out.println("Rescheduling...");
 		for (Task task: _tasks.values()) {
+			System.out.println("Task " + task._taskName + " is rescheduled.");
 			JobManager.sharedJobManager().sendJobs(task._mapJobs.values());
 		}
 	}

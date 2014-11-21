@@ -83,9 +83,7 @@ public class NetworkHelper {
 			masterService = (KPFSMasterInterface) registry
 					.lookup("DataMaster");
 		} catch (RemoteException | NotBoundException e) {
-			System.out
-					.println("Error occurs when looking up service in data master!");
-			e.printStackTrace();
+			System.out.println("Data master is down. Failed to get KPFS service.");
 		}
 		return masterService;
 	}
@@ -99,9 +97,7 @@ public class NetworkHelper {
 			slaveService = (KPFSSlaveInterface) registry
 					.lookup("DataSlave");
 		} catch (RemoteException | NotBoundException e) {
-			System.out
-					.println("Error occurs when looking up service in data node!");
-			e.printStackTrace();
+			System.out.println("Data node " + sid + " is down. Failed to get KPFS service.");
 		}
 		return slaveService;
 	}

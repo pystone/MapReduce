@@ -44,9 +44,10 @@ public class KPFSMaster implements KPFSMasterInterface {
 					curFile += curLine + '\n';
 				}
 
-				String curFileName = directory + fileName + ".part"
+				String curFileName = fileName + ".part"
 						+ String.format("%03d", partCnt++);
-				File outFile = new File(curFileName);
+				String curFilePath = GlobalInfo.sharedInfo().MasterRootDir + directory + curFileName;
+				File outFile = new File(curFilePath);
 				FileOutputStream outStream = new FileOutputStream(outFile);
 				try {
 					outStream.write(curFile.getBytes());
@@ -56,8 +57,8 @@ public class KPFSMaster implements KPFSMasterInterface {
 					e.printStackTrace();
 				}
 
-				smallFiles.add(curFileName);
-				addFileLocation(curFileName, 0, outFile.length());	// 0 is the id of master
+				smallFiles.add(curFilePath);
+				addFileLocation(directory + curFileName, 0, outFile.length());	// 0 is the id of master
 
 				/* release the memory */
 				curFile = curLine = "";
@@ -72,6 +73,9 @@ public class KPFSMaster implements KPFSMasterInterface {
 	public void duplicateFiles(ArrayList<KPFile> files, Object[] aliveSlaves) throws IOException, KPFSException {
 		for (KPFile file:files) {
 			File f = new File(file.getLocalAbsPath());
+			if (f.exists() == false) {
+				continue;
+			}
 			FileInputStream fin = new FileInputStream(f);
 			BufferedInputStream bin = new BufferedInputStream(fin);
 			byte[] byteArr = new byte[(int)f.length()];
@@ -89,12 +93,15 @@ public class KPFSMaster implements KPFSMasterInterface {
 			
 			/* store the file in that data node and update the metadata in server */
 			KPFSSlaveInterface sl = NetworkHelper.getSlaveService(sid);
+			if (sl == null) {
+				return;
+			}
 			sl.storeFile(file.getRelPath(), byteArr);
-			addFileLocation(file._fileName, sid, f.length());
+			addFileLocation(file.getRelPath(), sid, f.length());
 		}
 	}
 	
-	public void removeFileInSlave(int sid) {
+	public ArrayList<String> removeFileInSlave(int sid) {
 		ArrayList<String> toDel = new ArrayList<String>();
 		
 		for (String relPath: _mapTbl.keySet()) {
@@ -109,8 +116,20 @@ public class KPFSMaster implements KPFSMasterInterface {
 		for (String relPath: toDel) {
 			removeFileLocation(relPath, sid);
 		}
+		
+		return toDel;
 	}
 	
+	public void debug() {
+		for (String relPath: _mapTbl.keySet()) {
+			ArrayList<KPFSFileInfo> infos = _mapTbl.get(relPath);
+			System.out.print(relPath + ": ");
+			for (KPFSFileInfo info: infos) {
+				System.out.print(info._sid + " ");
+			}
+			System.out.println("");
+		}
+	}
 	
 	@Override
 	public synchronized KPFSFileInfo getFileLocation(String relPath) {
