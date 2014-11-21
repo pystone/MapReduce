@@ -131,15 +131,40 @@ public class Master implements NetworkFailInterface {
 	}
 	
 	private void showSlave() {
-		
+		System.out.println("The status of all slaves: ");
+		for (SlaveTracker tracker: _slvTracker.values()) {
+			System.out.println("\tSlave " + tracker._sid + ": waiting task(" + tracker._queueingCnt + "), working task(" + tracker._workingCnt + ")");
+		}
 	}
 	
 	private void showAllTask() {
-		
+		System.out.println("The status of all tasks: ");
+		for (String taskName: _tasks.keySet()) {
+			showTask(taskName);
+		}
 	}
 	
 	private void showTask(String taskName) {
-		
+		Task task = _tasks.get(taskName);
+		if (task == null) {
+			return;
+		}
+		System.out.println("\t" + task._taskName + " " + task._phase);
+		if (task._phase == Task.TaskPhase.MAP) {
+			System.out.println("\t\tJobs:");
+			for (JobInfo job: task._mapJobs.values()) {
+				System.out.print("\t\t\tJobId: " + job._jobId);
+				System.out.print(", Type: " + job._type);
+				System.out.println(", in slave: " + job._sid);
+			}
+		} else if (task._phase == Task.TaskPhase.REDUCE) {
+			System.out.println("\t\tJobs:");
+			for (JobInfo job: task._reduceJobs.values()) {
+				System.out.print("\t\t\tJobId: " + job._jobId);
+				System.out.print(", Type: " + job._type);
+				System.out.println(", in slave: " + job._sid);
+			}
+		}
 	}
 
 	
@@ -306,7 +331,7 @@ public class Master implements NetworkFailInterface {
 		
 		if (task.phaseComplete()) {
 			task._phase = Task.TaskPhase.FINISH;
-			_tasks.remove(task);
+//			_tasks.remove(task._taskName);
 			System.out.println("Task " + task._taskName + " is completed! The output files are at: ");
 			for (JobInfo ji: task._reduceJobs.values()) {
 				System.out.println("\tSlave " + ji._sid + ": " + ji._outputFile.get(0).getRelPath());
@@ -389,8 +414,11 @@ public class Master implements NetworkFailInterface {
 		
 		System.out.println("Rescheduling...");
 		for (Task task: _tasks.values()) {
-			System.out.println("Task " + task._taskName + " is rescheduled.");
-			JobManager.sharedJobManager().sendJobs(task._mapJobs.values());
+			if (task._phase != Task.TaskPhase.NONE && task._phase != Task.TaskPhase.FINISH) {
+				System.out.println("Task " + task._taskName + " is rescheduled.");
+				JobManager.sharedJobManager().sendJobs(task._mapJobs.values());
+			}
+			
 		}
 	}
 }
