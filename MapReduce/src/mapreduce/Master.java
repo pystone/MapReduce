@@ -131,7 +131,7 @@ public class Master implements NetworkFailInterface {
 	}
 	
 	private void showSlave() {
-		System.out.println("The status of all slaves: ");
+		System.out.println("The status of all slaves (including those who dies, for debug): ");
 		for (SlaveTracker tracker: _slvTracker.values()) {
 			System.out.println("\tSlave " + tracker._sid + ": waiting task(" + tracker._queueingCnt + "), working task(" + tracker._workingCnt + ")");
 		}
@@ -165,11 +165,6 @@ public class Master implements NetworkFailInterface {
 				System.out.println(", in slave: " + job._sid);
 			}
 		}
-	}
-
-	
-	public void slaveDown(int sid) {
-		System.out.println(sid + "is down...");
 	}
 	
 	public void slaveHeartbeat(int sid, SlaveTracker tracker) {
