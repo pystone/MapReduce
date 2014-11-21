@@ -142,18 +142,6 @@ public class Master implements NetworkFailInterface {
 		
 	}
 
-	public void newSlave(Socket socket, int sid) {
-		// TODO: check the incoming slave is on the config file!
-		_slvSocket.put(sid, socket);
-		System.out.println("New slave connected! " + sid);
-
-		Message ack = new Message(0, Message.MessageType.HELLO_ACK);
-		try {
-			NetworkHelper.send(socket, ack);
-		} catch (IOException e) {
-			slaveDown(sid);
-		}
-	}
 	
 	public void slaveDown(int sid) {
 		System.out.println(sid + "is down...");

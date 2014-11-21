@@ -7,6 +7,7 @@ import hdfs.KPFSSlave;
 import hdfs.KPFSSlaveInterface;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.rmi.RemoteException;
@@ -44,34 +45,33 @@ public class Slave implements NetworkFailInterface {
 		try {
 			_socket = new Socket(GlobalInfo.sharedInfo().MasterHost,
 					GlobalInfo.sharedInfo().MasterPort);
+			
+			/* tell master my sid */
 			ObjectOutputStream out = new ObjectOutputStream(_socket.getOutputStream());
 			out.writeObject(GlobalInfo.sharedInfo()._sid);
 			
-		} catch (IOException e) {
+			/* check if this sid is valid from master */
+			ObjectInputStream inStream = new ObjectInputStream(_socket.getInputStream());
+			String res = (String) inStream.readObject();
+			if (res.equals("no")) {
+				System.err.println("Slave with sid " + GlobalInfo.sharedInfo()._sid + " is already connected to master!");
+				System.exit(-1);
+			}
+			System.out.println("Connected to master");
+			
+		} catch (IOException | ClassNotFoundException e) {
 			System.out.println("Connection failed!");
 			e.printStackTrace();
 			System.exit(-1);
 		}
 	}
 
-	public void start(int sid) {
-		GlobalInfo.sharedInfo()._sid = sid;
+	public void start() {
 		
-		MsgHandler handler = new MsgHandler(sid, _socket, this);
+		MsgHandler handler = new MsgHandler(GlobalInfo.sharedInfo()._sid, _socket, this);
 		Thread t = new Thread(handler);
 		t.start();
 		
-		/* tell master my sid */
-		Message msg = new Message();
-		msg._type = Message.MessageType.HELLO_SID;
-		msg._source = sid;
-		try {
-			NetworkHelper.send(_socket, msg);
-		} catch (IOException e1) {
-			System.err.println("Network problem. Failed to tell master my sid " + sid);
-			e1.printStackTrace();
-			System.exit(-1);
-		}
 		
 		/* start HDFS */
 		try {
@@ -100,6 +100,7 @@ public class Slave implements NetworkFailInterface {
 		SlaveWork work = new SlaveWork(null, false);
 		work.start();
 		
+		_ready = true;
 
 		/* sending heart beat to master */
 		while (true) {
@@ -134,7 +135,7 @@ public class Slave implements NetworkFailInterface {
 	}
 	
 	public void slaveReady() {
-		_ready = true;
+//		_ready = true;
 	}
 
 	public void newJob(JobInfo job) {

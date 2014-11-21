@@ -89,7 +89,7 @@ public class MapReduce {
 				System.exit(-1);
 			}
 			GlobalInfo.sharedInfo()._sid = sid;
-			Slave.sharedSlave().start(Integer.parseInt(opt));
+			Slave.sharedSlave().start();
 		} else {
 			System.out.println("This machine is not included in config file!");
 		}

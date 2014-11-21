@@ -44,17 +44,11 @@ public class MsgHandler extends Thread {
 				}
 				switch (msg._type) {
 				/* master -> slave */
-				case HELLO_ACK:
-					Slave.sharedSlave().slaveReady();
-					break;
 				case NEW_JOB:
 					Slave.sharedSlave().newJob((JobInfo)msg._content);
 					break;
 					
 				/* slave -> master */
-				case HELLO_SID:
-					Master.sharedMaster().newSlave(_socket, msg._source);
-					break;
 				case SLAVE_HEARTBEAT:
 					Master.sharedMaster().slaveHeartbeat(msg._source, (SlaveTracker)msg._content);
 					break;
