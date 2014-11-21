@@ -9,12 +9,16 @@ import java.util.Iterator;
 
 
 /**
- * @author arturh
+ * Pair
+ * 
+ * A structure to store a key-value pair. Based on the arturh's implementation. 
  * @see http://stackoverflow.com/questions/156275/what-is-the-equivalent-of-the-c-pairl-r-in-java
  *
  */
 public class Pair implements Comparable, Serializable {	
-    private String first;
+
+	private static final long serialVersionUID = -6347137463924054374L;
+	private String first;
     private ArrayList<String> list;
     
     public Pair(String line) {
@@ -48,31 +52,6 @@ public class Pair implements Comparable, Serializable {
     	}
     }
     
-//    public int hashCode() {
-//    	int hashFirst = first != null ? first.hashCode() : 0;
-//    	
-//    	int hashSecond = 0;
-//    	for(String str : list) {
-//    		hashSecond += str.hashCode();
-//    	}
-//
-//    	return (hashFirst + hashSecond);
-//    }
-
-//    public boolean equals(Object other) {
-//    	if (other instanceof Pair) {
-//    		Pair otherPair = (Pair) other;
-//    		return 
-//    		((  this.first == otherPair.first ||
-//    			( this.first != null && otherPair.first != null &&
-//    			  this.first.equals(otherPair.first))) &&
-//    		 (	this.list == otherPair.list ||
-//    			( this.list != null && otherPair.list != null &&
-//    			  this.list.equals(otherPair.list))) );
-//    	}
-//
-//    	return false;
-//    }
 
     public String toString()
     { 

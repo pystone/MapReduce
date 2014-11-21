@@ -5,24 +5,24 @@ package mapreduce;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Set;
 
 /**
- * @author PY
+ * GlobalInfo
+ * 
+ * Store all the information in "config.txt". And provide some convenient methods to 
+ * get the information. Served for both map-reduce system and KPFS.
  *
  */
 public class GlobalInfo {
-	// For map-reduce
+	/* ======== For map-reduce ======== */
 	public int MasterPort = 7888;
 	public int SlavePort = 8999;
 	public String MasterHost = "73.52.255.101";
 	public HashMap<Integer, String> SID2Host = new HashMap<Integer, String>();
 	public HashMap<Integer, Integer> SID2Capacity = new HashMap<Integer, Integer>(); 
 	
-	// For KPFS
+	/* ======== For KPFS ======== */
 	public int FileChunkSizeB = 27;
 	public int NumberOfReducer = 3;
 	
@@ -38,9 +38,10 @@ public class GlobalInfo {
 	public int DataMasterPort = 9980;
 	public int DataSlavePort = 9990;
 	
+	/* actually should be ID2RootDir, translate sid to the root directory of that machine (including master) */
 	public HashMap<Integer, String> Host2RootDir = new HashMap<Integer, String>();
 	
-	/* set by every node */
+	/* ======== set by every node ======== */
 	public int _sid = -1;
 	
 	
@@ -72,10 +73,6 @@ public class GlobalInfo {
 		return ret;
 	}
 	
-//	public String getLocalRootDir() {
-//		String localhost = getLocalHost();
-//		return getRootDirByHost(localhost);
-//	}
 	
 	public String getLocalRootDir() {
 		return Host2RootDir.get(_sid);
@@ -90,28 +87,6 @@ public class GlobalInfo {
 			e.printStackTrace();
 		}
 		return localhost;
-	}
-	
-	public boolean isMaster() {
-		String host = getLocalHost();
-		return host.equals(MasterHost);
-	}
-	
-	public boolean isSlave() {
-		String host = getLocalHost();
-		Collection<String> shosts = Host2RootDir.values();
-		for (String slave: shosts) {
-			if (shosts.equals(host)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	public Integer[] getActiveSlaveId() {
-		Set<Integer> tmpKey = ((HashMap<Integer, String>)SID2Host.clone()).keySet();
-		tmpKey.remove(0);
-		return (Integer[]) tmpKey.toArray();
 	}
 	
 	public int getDataSlavePort(int sid) {

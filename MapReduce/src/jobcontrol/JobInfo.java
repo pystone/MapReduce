@@ -24,8 +24,12 @@ import mapreduce.Pair;
 import mapreduce.PairContainer;
 
 /**
- * @author PY
+ * JobInfo
  * 
+ * Store all the information of a job and provide some convenient methods to get the information of 
+ * this job.
+ * 
+ * Note: we use a different description from Hadoop. Task is larger work and the job is smaller work.
  */
 public class JobInfo implements Serializable {
 	private static final long serialVersionUID = 5710312452396530832L;
@@ -57,6 +61,10 @@ public class JobInfo implements Serializable {
 		_taskName = taskName;
 	}
 
+	/*
+	 * Get a instance of the user-defined map-reduce class so that we can 
+	 * invode the "map" and "reduce" methods. 
+	 */
 	public MRBase getMRInstance() throws RemoteException {
 		byte[] jarByte = _mrFile.getFileBytes();
 		MRBase mrins = null;
@@ -105,6 +113,9 @@ public class JobInfo implements Serializable {
 
 	}
 
+	/*
+	 * Read the intermediate files and put them into PairContainer. Used by reduce job.
+	 */
 	public PairContainer getInterPairs() throws RemoteException {
 		if (_type != JobInfo.JobType.REDUCE) {
 			System.out
@@ -125,6 +136,12 @@ public class JobInfo implements Serializable {
 		return ret;
 	}
 
+	/*
+	 * Save the content inside interFile into several files and create KPFile for them.
+	 * The file name is "(TaskName)(MapJobID).inter(ReduceJobID)". ReduceJobID is calculated
+	 * as hash(key) % number of reducers. Pairs with the same ReduceJobID will be stored in the 
+	 * same file so that it's easier for master to assign reduce job.
+	 */
 	public void saveInterFile(PairContainer interFile) {
 		if (_type != JobInfo.JobType.MAP) {
 			System.out
@@ -133,9 +150,18 @@ public class JobInfo implements Serializable {
 		}
 		
 		Iterator<Pair> itor = interFile.getInitialIterator();
+		
+		/* 
+		 * key is the reduce job id, and the value is the container containing all the pairs whose
+		 * reduce job id is the key.
+		 */
 		HashMap<Integer, PairContainer> interPairs = new HashMap<Integer, PairContainer>();
+		
+		/* sort all the pairs into the right container */
 		while (itor.hasNext()) {
 			Pair pair = itor.next();
+			
+			/* get the reduce job id for this pair */
 			int hash = (pair.getFirst().hashCode() & Integer.MAX_VALUE)
 					% GlobalInfo.sharedInfo().NumberOfReducer;
 			if (interPairs.get(hash) == null) {
@@ -145,6 +171,7 @@ public class JobInfo implements Serializable {
 			container.emit(pair);
 		}
 		
+		/* store all the pairs with the same reduce job id into the same file */
 		for (Integer hash: interPairs.keySet()) {
 			PairContainer container = interPairs.get(hash);
 			container.mergeSameKey();
@@ -164,6 +191,10 @@ public class JobInfo implements Serializable {
 		}
 	}
 
+	/*
+	 * Save the content inside resultContainer into the corresponding file. The file name is 
+	 * "(TaskName).result(ReduceJobID)".
+	 */
 	public void saveResultFile(PairContainer resultContainer) {
 		if (_type != JobInfo.JobType.REDUCE) {
 			System.out.println("WARNING: try to save result pair for map job!");
@@ -175,6 +206,7 @@ public class JobInfo implements Serializable {
 		
 		KPFile kpfile = new KPFile(interDir, fileName);
 		try {
+			/* save this file locally and notify the data master */
 			kpfile.saveFileLocally(resultContainer.toString().getBytes());
 		} catch (IOException e) {
 			System.err.println("ERROR: failed to notify metadata of result file to master!");
@@ -184,6 +216,9 @@ public class JobInfo implements Serializable {
 
 	}
 	
+	/*
+	 * Get a hash map with key indicating the reduce job id and value indicating a KPFile in output file.
+	 */
 	public HashMap<Integer, KPFile> getInterFilesWithIndex() {
 		if (_type != JobInfo.JobType.MAP_COMPLETE || _outputFile.isEmpty()) {
 			System.out.println("WARNING: try to get all the indeces for non completed map job!");
@@ -197,6 +232,9 @@ public class JobInfo implements Serializable {
 		return ret;
 	}
 	
+	/*
+	 * For debug.
+	 */
 	public void serialize() {
 		System.out.println("TaskName: " + _taskName);
 		System.out.println("JobID: " + _jobId);

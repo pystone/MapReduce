@@ -10,7 +10,10 @@ import jobcontrol.JobInfo;
 import network.Message;
 
 /**
- * @author PY
+ * SlaveWork
+ * 
+ * The working thread in slave. Only one instance is coordinator that will check the queue and 
+ * put the job in that queue into work. The other instances will be the worker.
  *
  */
 public class SlaveWork extends Thread {
@@ -25,11 +28,17 @@ public class SlaveWork extends Thread {
 		if (_isWorker) {
 			work();
 		} else {
-			/* periodically check if there are waiting jobs and put them in job if possible */
+			/*
+			 * Coordinator: periodically check if there are waiting jobs and put them in job if possible 
+			 */
 			while (true) {
 				JobInfo newJob = null;
 				synchronized (Slave.sharedSlave()._waitingJob) {
 					if (Slave.sharedSlave()._waitingJob.isEmpty() == false) {
+						/* 
+						 * Load balancer entrance: now the queue is FIFO.
+						 * Can assign the job according to other rules.
+						 */
 						newJob = Slave.sharedSlave()._waitingJob.get(0);
 					}
 				}
@@ -43,10 +52,12 @@ public class SlaveWork extends Thread {
 					curWorking += Slave.sharedSlave()._workingJob.size();
 				}
 				
+				/* check if the number of working jobs exceeds the capacity assigned in config.txt */
 				if (curWorking > GlobalInfo.sharedInfo().SID2Capacity.get(GlobalInfo.sharedInfo()._sid)) {
 					newJob = null;
 				}
 				
+				/* put the job into work in a new thread */
 				if (newJob != null) {
 					synchronized (Slave.sharedSlave()._waitingJob) {
 						Slave.sharedSlave()._waitingJob.remove(newJob);
@@ -59,6 +70,7 @@ public class SlaveWork extends Thread {
 		
 	}
 	
+	/* Decide the job is map or reduce */
 	private void work() {
 		System.out.println("start a new job: " + _job._jobId + " " + _job._taskName
 		+ " " + _job._type);

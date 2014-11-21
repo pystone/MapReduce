@@ -6,7 +6,9 @@ package mapreduce;
 import java.io.Serializable;
 
 /**
- * @author PY
+ * SlaveTracker
+ * 
+ * Store the status of a slave. Sent as the content of a heart beat from map-reduce slave to master
  *
  */
 public class SlaveTracker implements Serializable {

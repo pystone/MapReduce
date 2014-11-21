@@ -13,20 +13,34 @@ import network.NetworkHelper;
 import mapreduce.GlobalInfo;
 
 /**
- * @author PY
+ * KPFile
+ * 
+ * Encapsulates all the file operation in KPFS. Every file is identified by relative directory and
+ * it's file name. Provides two methods to get the content:  getFileString() and getFileBytes(). These 
+ * methods will fetch the location of this file from data master, and then fetch the content from 
+ * the corresponding data node.
  * 
  */
 public class KPFile implements Serializable {
 
 	private static final long serialVersionUID = 225432063820226038L;
-	public String _relDir = null; // "taskName/*Files/"
-	public String _fileName = null; // "taskName.part001"
+	
+	/* the  directory of this file relative to the root directory. 
+	 * all the directory inside the program end with "/" 
+	 */
+	public String _relDir = null; /* "taskName/*Files/" */
+	
+	public String _fileName = null; /* "taskName.part001" */
 
 	public KPFile(String relDir, String fileName) {
 		_relDir = relDir;
 		_fileName = fileName;
 	}
 
+	/*
+	 * Get the content as string of this file from data node. The location of this file will be 
+	 * first fetched from data master.
+	 */
 	public String getFileString() throws RemoteException {
 		/* retrieve location information from data master */
 		KPFSMasterInterface masterService = NetworkHelper.getMasterService();
@@ -55,6 +69,10 @@ public class KPFile implements Serializable {
 		return content;
 	}
 
+	/*
+	 * Get the content as byte[] of this file from data node. The location of this file will be 
+	 * first fetched from data master.
+	 */
 	public byte[] getFileBytes() throws RemoteException {
 		KPFSMasterInterface masterService = NetworkHelper.getMasterService();
 		if (masterService == null) {
@@ -78,14 +96,9 @@ public class KPFile implements Serializable {
 		return content;
 	}
 
-	public String getRelPath() {
-		return _relDir + _fileName;
-	}
-
-	public String getLocalAbsPath() {
-		return GlobalInfo.sharedInfo().getLocalRootDir() + getRelPath();
-	}
-
+	/*
+	 * Save this file in the local data node and notify data master the location information
+	 */
 	public void saveFileLocally(byte[] byteArr)
 			throws IOException {
 		File file = new File(getLocalAbsPath());
@@ -101,5 +114,13 @@ public class KPFile implements Serializable {
 		masterService.addFileLocation(getRelPath(), GlobalInfo.sharedInfo()._sid,
 				(int) file.length());
 		
+	}
+	
+	public String getRelPath() {
+		return _relDir + _fileName;
+	}
+
+	public String getLocalAbsPath() {
+		return GlobalInfo.sharedInfo().getLocalRootDir() + getRelPath();
 	}
 }

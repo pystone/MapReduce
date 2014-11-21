@@ -21,20 +21,20 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 
 import jobcontrol.JobInfo;
 import jobcontrol.JobManager;
 import jobcontrol.Task;
 import network.Listen;
-import network.Message;
 import network.NetworkFailInterface;
-import network.NetworkHelper;
 
 /**
- * @author PY
+ * Master
+ * 
+ * The main thread of map-reduce master. Read in the user input and handle the commands.
+ * Also provide the handlers for messages from slaves.
+ * Maintain all the running tasks.
  * 
  */
 public class Master implements NetworkFailInterface {
@@ -47,10 +47,20 @@ public class Master implements NetworkFailInterface {
 		return _sharedMaster;
 	}
 
+	/* map the sid to the socket corresponding to that slave */
 	public HashMap<Integer, Socket> _slvSocket = new HashMap<Integer, Socket>();
+	
+	/* map the task name to the task */
 	public volatile HashMap<String, Task> _tasks = new HashMap<String, Task>();
+	
+	/* map the sid to the tracker of that slave */
 	private volatile HashMap<Integer, SlaveTracker> _slvTracker = new HashMap<Integer, SlaveTracker>();
 
+	/* the data master service instance */
+	private KPFSMasterInterface _kpfsMaster;
+	
+	/* the data node service instance */
+	private KPFSSlaveInterface _kpfsSlave;
 
 	private Master() {
 		GlobalInfo.sharedInfo()._sid = 0;
@@ -58,8 +68,7 @@ public class Master implements NetworkFailInterface {
 		l.start();
 	}
 
-	private KPFSMasterInterface _kpfsMaster;
-	private KPFSSlaveInterface _kpfsSlave;
+	
 	
 	public void start() {
 		/* start HDFS as master node*/
@@ -90,6 +99,7 @@ public class Master implements NetworkFailInterface {
             System.exit(-1);
         }
 		
+		/* read in the user commands and handle them */
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
 			String line = null;
@@ -104,6 +114,7 @@ public class Master implements NetworkFailInterface {
 		}
 	}
 
+	/* ============ Handlers for user commands BEGIN ============ */
 	public void inputHandler(String[] cmd) {
 		switch (cmd[0]) {
 		case "new":
@@ -112,7 +123,7 @@ public class Master implements NetworkFailInterface {
 		case "showslave":
 			showSlave();
 			break;
-		case "showalltask":
+		case "showalltasks":
 			showAllTask();
 			break;
 		case "show":
@@ -123,7 +134,7 @@ public class Master implements NetworkFailInterface {
 				System.out.println(sid);
 			}
 			break;
-		case "fsdebug":
+		case "showallfiles":
 			((KPFSMaster) _kpfsMaster).debug();
 			break;
 		}
@@ -164,12 +175,6 @@ public class Master implements NetworkFailInterface {
 				System.out.print(", Type: " + job._type);
 				System.out.println(", in slave: " + job._sid);
 			}
-		}
-	}
-	
-	public void slaveHeartbeat(int sid, SlaveTracker tracker) {
-		synchronized (_slvTracker) {
-			_slvTracker.put(sid, tracker);
 		}
 	}
 
@@ -244,6 +249,16 @@ public class Master implements NetworkFailInterface {
 		
 		currentTask._phase = Task.TaskPhase.MAP;
 		JobManager.sharedJobManager().sendJobs(currentTask._mapJobs.values());
+	}
+	
+	/* ============ Handlers for user commands END ============ */
+	
+	/* ============ Handlers for network messages BEGIN ============ */
+	
+	public void slaveHeartbeat(int sid, SlaveTracker tracker) {
+		synchronized (_slvTracker) {
+			_slvTracker.put(sid, tracker);
+		}
 	}
 
 	public void checkMapCompleted(JobInfo job) {
@@ -335,8 +350,14 @@ public class Master implements NetworkFailInterface {
 		
 		
 	}
+	/* ============ Handlers for network messages BEGIN ============ */
 
-	/* load balancer */
+	/* 
+	 * Load balancer. Now only randomly choose a slave to do the job.
+	 * 
+	 * To be continued: use the information of _slvTracker to decide which slave 
+	 * is the best one to receive a new job.
+	 */
 	public synchronized int getFreeSlave() {
 		int slv = 0;
 		synchronized (_slvSocket) {
@@ -355,6 +376,11 @@ public class Master implements NetworkFailInterface {
 		return sid.intValue();
 	}
 
+	/*
+	 * One slave is down. 
+	 * 1. Fix the location information of all the affected files and duplicate them into another data node. 
+	 * 2. Reschedule all the running tasks.
+	 */
 	@Override
 	public void networkFail(int sid) {
 		System.out.println("networkFail: " + sid);

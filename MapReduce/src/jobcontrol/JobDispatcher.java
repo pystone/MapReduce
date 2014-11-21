@@ -11,7 +11,10 @@ import network.Message;
 import network.NetworkHelper;
 
 /**
- * @author PY
+ * JobDispatcher
+ * 
+ * Periodically check if the sending queue in JobManager is empty. If not, send the queueing job
+ * out to the specific slave.
  * 
  */
 public class JobDispatcher extends Thread {

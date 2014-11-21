@@ -8,7 +8,9 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * @author PY
+ * JobManager
+ * 
+ * Encapsulate the operation to sending queue in master.
  *
  */
 public class JobManager {

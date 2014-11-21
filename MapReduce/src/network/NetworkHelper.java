@@ -18,7 +18,11 @@ import java.rmi.registry.Registry;
 import mapreduce.GlobalInfo;
 
 /**
- * @author PY
+ * NetworkHelper
+ * 
+ * Some helper functions 
+ * 1. Sending and receiving message with socket (map-reduce)
+ * 2. Get the service of RMI (KPFS)
  *
  */
 public class NetworkHelper {

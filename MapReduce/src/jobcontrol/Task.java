@@ -4,6 +4,14 @@ import hdfs.KPFile;
 
 import java.util.HashMap;
 
+/**
+ * Task
+ * 
+ * Store all the information of a task and provide some convenient methods to get the information of 
+ * this task.
+ * 
+ * Note: we use a different description from Hadoop. Task is larger work and the job is smaller work.
+ */
 public class Task {
 	public enum TaskPhase{
 		NONE,
@@ -23,6 +31,9 @@ public class Task {
 		_taskName = taskName;
 	}	
 	
+	/*
+	 * Check if this task is finished, no matter it's map or reduce.
+	 */
 	public boolean phaseComplete() {
 		if (_phase == TaskPhase.MAP) {
 			for (Integer jobId: _mapJobs.keySet()) {
@@ -46,6 +57,9 @@ public class Task {
 		return false;
 	}
 	
+	/* 
+	 * Clear the task. Used when a slave is down and reschedule this task. 
+	 */
 	public void reset() {
 		synchronized (this) {
 			_phase = TaskPhase.MAP_READY;

@@ -21,7 +21,13 @@ import network.NetworkHelper;
 import mapreduce.GlobalInfo;
 
 /**
- * @author PY
+ * KPFSMaster
+ * 
+ * KPFS communicates with RMI. This is the service class in data master.
+ * Mainly used to provide the location information of every KPFile.
+ * 
+ * Besides, also provides some methods for data master use only, like splitFile(), duplicateFiles()
+ * and so on.
  *
  */
 public class KPFSMaster implements KPFSMasterInterface {
@@ -29,6 +35,10 @@ public class KPFSMaster implements KPFSMasterInterface {
 
 	private HashMap<String, Set<KPFSFileInfo>> _mapTbl = new HashMap<String, Set<KPFSFileInfo>>(); 
 	
+	/* 
+	 * At the beginning of a task, split the input file into small files and duplicate them to another
+	 * data node for redundancy.
+	 */
 	public ArrayList<String> splitFile(String filePath, int chunkSizeB,
 			String directory, String fileName) {
 		try {
@@ -72,6 +82,9 @@ public class KPFSMaster implements KPFSMasterInterface {
 		return null;
 	}
 	
+	/*
+	 * Duplicate the files into alive slaves and update the metadata in data master.
+	 */
 	public void duplicateFiles(ArrayList<KPFile> files, Object[] aliveSlaves) throws IOException, KPFSException {
 		for (KPFile file:files) {
 			File f = new File(file.getLocalAbsPath());
@@ -103,6 +116,10 @@ public class KPFSMaster implements KPFSMasterInterface {
 		}
 	}
 	
+	/*
+	 * Remove the metadata of all the files have a copy in slave sid.
+	 * Used when sid is down.
+	 */
 	public ArrayList<String> removeFileInSlave(int sid) {
 		ArrayList<String> toDel = new ArrayList<String>();
 		
@@ -133,6 +150,10 @@ public class KPFSMaster implements KPFSMasterInterface {
 		}
 	}
 	
+	/*
+	 * Return the location information of a file with the in the relative path.
+	 * The relative path of a file is its identification.
+	 */
 	@Override
 	public synchronized KPFSFileInfo getFileLocation(String relPath) {
 		Set<KPFSFileInfo> ips = (Set<KPFSFileInfo>) _mapTbl.get(relPath);
@@ -146,6 +167,10 @@ public class KPFSMaster implements KPFSMasterInterface {
 		return kpfsfileinfo;
 	}
 	
+	/*
+	 * Add the metadata of a file. Used when a slave produces a new file (intermediate file
+	 * or result file).
+	 */
 	@Override
 	public synchronized boolean addFileLocation(String relPath, int sid, long size) {
 		Set<KPFSFileInfo> ips = _mapTbl.get(relPath);
@@ -158,6 +183,10 @@ public class KPFSMaster implements KPFSMasterInterface {
 		return true;
 	}
 	
+	/*
+	 * Remove the location information in sid of the file in the relPath.
+	 * Used when sid is down.
+	 */
 	@Override
 	public synchronized void removeFileLocation(String relPath, int sid) {
 		Set<KPFSFileInfo> ips = _mapTbl.get(relPath);

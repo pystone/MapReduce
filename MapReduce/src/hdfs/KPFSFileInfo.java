@@ -6,10 +6,14 @@ package hdfs;
 import java.io.Serializable;
 
 /**
- * @author PY
+ * KPFSFileInfo
+ * 
+ * Used in data master to store the location and size of a KPFile.
  *
  */
 public class KPFSFileInfo implements Serializable {
+
+	private static final long serialVersionUID = -8638758877808784241L;
 	public long _size = 0;
 	public int _sid = -1;
 	
@@ -22,11 +26,17 @@ public class KPFSFileInfo implements Serializable {
 		_size = size;
 	}
 	
+	/* 
+	 * For being used in Set 
+	 */
 	@Override
     public int hashCode() {
 		return _sid;
 	}
 	
+	/* 
+	 * For being used in Set 
+	 */
 	@Override
     public boolean equals(Object obj) {
         if (this == obj)

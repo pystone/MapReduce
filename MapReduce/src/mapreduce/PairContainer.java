@@ -1,10 +1,5 @@
 package mapreduce;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +33,10 @@ public class PairContainer implements Serializable {
 		emit(pair);
 	}
 	
+	/*
+	 * Merge all the pairs with the same key into a pair (value is an array).
+	 */
+	@SuppressWarnings("unchecked")
 	public void mergeSameKey() {
 		String currentKey = null;
 		
@@ -80,46 +79,11 @@ public class PairContainer implements Serializable {
 		return _list.iterator() ;
 	}
 	
-	// use some special ASCII code as delimiter
-//	public void saveResultFile(String path) {
-//		(new File(path)).getParentFile().mkdirs();
-//		
-//		FileOutputStream os = saveResultStream(path);
-//		try {
-//			os.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//	} 
-//	
-//	public FileOutputStream saveResultStream(String path) {
-//		FileOutputStream os = null;
-//		BufferedWriter bw = null;
-//		try {
-//			os = new FileOutputStream(path);
-//			bw = new BufferedWriter(new OutputStreamWriter(os));
-//			
-//			for(Pair pair : _list) {
-//				String key = pair.getFirst();
-//				Iterator<String> val = pair.getSecond();
-//				
-//				StringBuilder valStr = new StringBuilder();
-//				while(val.hasNext()) {
-//					valStr.append(val.next());
-//					valStr.append(";");
-//				}
-//				bw.write(key + "\t" + valStr.toString());
-//				bw.newLine();
-//			}
-//			bw.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		
-//		return os;
-//	}
-	
-	// PairContainer => key1:value1,value2,value3;key2:value1,value2,value3;
+	/*
+	 * Convert all the pairs to a string so that it can be saved in a file.
+	 * 
+	 * PairContainer => key1:value1,value2,value3;key2:value1,value2,value3;
+	 */
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		Iterator<Pair> itor = _list.iterator();
@@ -135,7 +99,11 @@ public class PairContainer implements Serializable {
 		return sb.toString();
 	}
 	
-	// key1:value1,value2,value3;key2:value1,value2,value3; => PairContainer 
+	/*
+	 * Restore from a string read in from a file into this container.
+	 * 
+	 * key1:value1,value2,value3;key2:value1,value2,value3; => PairContainer 
+	 */
 	public void restoreFromString(String str) {
 		if(str == null) {
 			return;

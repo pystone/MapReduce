@@ -23,7 +23,9 @@ import network.NetworkFailInterface;
 import network.NetworkHelper;
 
 /**
- * @author PY
+ * Slave
+ * 
+ * The main thread of a map-reduce slave.
  * 
  */
 public class Slave implements NetworkFailInterface {
@@ -36,9 +38,16 @@ public class Slave implements NetworkFailInterface {
 		return _sharedSlave;
 	}
 
+	/* The socket to map-reduce master */
 	public Socket _socket;
+	
+	/* All the queueing jobs */
 	public ArrayList<JobInfo> _waitingJob = new ArrayList<JobInfo>();
+	
+	/* All the working jobs */
 	public ArrayList<JobInfo> _workingJob = new ArrayList<JobInfo>();
+	
+	/* Ready to receive job and report the status to master */
 	private boolean _ready = false;
 
 	private Slave() {
@@ -67,13 +76,13 @@ public class Slave implements NetworkFailInterface {
 	}
 
 	public void start() {
-		
+		/* start receiving messages from master in another thread */
 		MsgHandler handler = new MsgHandler(GlobalInfo.sharedInfo()._sid, _socket, this);
 		Thread t = new Thread(handler);
 		t.start();
 		
 		
-		/* start HDFS */
+		/* start HDFS as data node */
 		try {
 			KPFSSlave obj = new KPFSSlave();
 			KPFSSlaveInterface stub = (KPFSSlaveInterface) UnicastRemoteObject
@@ -100,9 +109,10 @@ public class Slave implements NetworkFailInterface {
 		SlaveWork work = new SlaveWork(null, false);
 		work.start();
 		
+		/* ready to work */
 		_ready = true;
 
-		/* sending heart beat to master */
+		/* sending heart beat to master periodically */
 		while (true) {
 			if (!_ready) {
 				continue;
@@ -134,10 +144,9 @@ public class Slave implements NetworkFailInterface {
 		}
 	}
 	
-	public void slaveReady() {
-//		_ready = true;
-	}
-
+	/*
+	 * Receive a new job from master. Put it into the queue. The coordinator will set them work.
+	 */
 	public void newJob(JobInfo job) {
 //		System.out.println("get a new job: " + job._jobId + " " + job._taskName
 //				+ " " + job._type);
@@ -158,6 +167,9 @@ public class Slave implements NetworkFailInterface {
 		
 	}
 	
+	/*
+	 * Report to the master that the status of a job is changed.
+	 */
 	public synchronized void updateJobInfo(JobInfo job, Message.MessageType type) {
 		Message msg = new Message(GlobalInfo.sharedInfo()._sid, type);
 		msg._content = job;
@@ -180,6 +192,9 @@ public class Slave implements NetworkFailInterface {
 		}
 	}
 
+	/*
+	 * Map-reduce master is down.
+	 */
 	@Override
 	public void networkFail(int sid) {
 		System.err.println("Connection broken. Please restart this slave!");

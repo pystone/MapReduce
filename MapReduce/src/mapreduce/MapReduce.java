@@ -21,15 +21,14 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.Scanner;
-import java.util.Set;
 
 /**
- * @author PY
+ * MapReduce
+ * 
+ * The main entrance of the entire system. 
  * 
  */
 public class MapReduce {
@@ -38,14 +37,8 @@ public class MapReduce {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// if (args.length == 0) {
-		// System.out.println("Please provide config file name!");
-		// System.exit(-1);
-		// }
-		// start(args[0], args[1]);
 		
-		
-		System.out.println("(M)aster or (S)lave?");
+		System.out.println("(m)aster or (s)lave? If choose to be slave, please provide the sid.");
 		Scanner in = new Scanner(System.in);
 		String line = in.nextLine();
 		String[] cmd = line.split("\\s+");
@@ -57,6 +50,9 @@ public class MapReduce {
 		} else if (cmd[0].contains("s")) {
 			role = "s";
 			opt = cmd[1];
+		} else {
+			System.out.println("Invalid input. Please restart.");
+			System.exit(-1);
 		}
 		start("config.txt", role, opt);
 	}
@@ -77,10 +73,12 @@ public class MapReduce {
 
 		loadConfig(prop);
 
-		if (mstOrSlv.equalsIgnoreCase("m")) {
+		if (mstOrSlv.contains("m")) {
+			
 			System.out.println("Master");
 			Master.sharedMaster().start();
-		} else if (mstOrSlv.equalsIgnoreCase("s")) {
+		} else if (mstOrSlv.contains("s")) {
+			
 			System.out.println("Slave");
 			int sid = Integer.parseInt(opt);
 			String confIP = GlobalInfo.sharedInfo().SID2Host.get(sid);
@@ -143,7 +141,7 @@ public class MapReduce {
 
 	}
 
-	// ====== test begin ======
+	// ====== test begin, for debug ======
 	private static void testSplit() throws RemoteException {
 		File file = new File("words.txt");
 		String dir = file.getAbsolutePath().substring(0,

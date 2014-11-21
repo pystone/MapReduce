@@ -12,11 +12,12 @@ import mapreduce.Slave;
 import mapreduce.SlaveTracker;
 
 /**
- * Used by master.
- * Handle the incoming connection from slaves.
- * A new instance in an independent thread for every connection.
+ * MsgHandler
  * 
- * @author PY
+ * Used by map-reduce master and slaves. Distribute the incoming message
+ * to different handlers.
+ * 
+ * A new instance in an independent thread for every connection.
  *
  */
 public class MsgHandler extends Thread {
@@ -62,10 +63,9 @@ public class MsgHandler extends Thread {
     			
 			} catch (ClassNotFoundException | IOException e) {
 				connAlive = false;
-//				System.out.println("one conn down " + _sid);
-//				e.printStackTrace();
 			}
     	}
+    	/* notify master or slave of the failure */ 
     	_failDele.networkFail(_sid);
     }
 }

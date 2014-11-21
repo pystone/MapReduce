@@ -9,15 +9,12 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import mapreduce.GlobalInfo;
 import mapreduce.Master;
 
 /**
- * Used by master.
+ * Used by map-reduce master.
  * The listen class responsible for accepting connection from slaves.
  * Running in a standalone thread.
- * 
- * @author PY
  *
  */
 public class Listen extends Thread {
@@ -41,6 +38,7 @@ public class Listen extends Thread {
             	ObjectInputStream inStream = new ObjectInputStream(slave.getInputStream());
         		Integer slvSid = (Integer)inStream.readObject();
         		
+        		/* if the sid is already connected, say no */
         		String res = "yes";
         		if (Master.sharedMaster()._slvSocket.containsKey(slvSid)) {
         			res = "no";
@@ -55,6 +53,7 @@ public class Listen extends Thread {
         		ObjectOutputStream out = new ObjectOutputStream(slave.getOutputStream());
     			out.writeObject(res);
         		
+    			/* receive the message in another thread */
                 MsgHandler handler = new MsgHandler(slvSid, slave, Master.sharedMaster());
                 Thread t = new Thread(handler);
                 t.start();
