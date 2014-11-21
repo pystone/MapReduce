@@ -11,9 +11,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.Set;
 
 import network.NetworkHelper;
 import mapreduce.GlobalInfo;
@@ -25,7 +27,7 @@ import mapreduce.GlobalInfo;
 public class KPFSMaster implements KPFSMasterInterface {
 	public KPFSMaster() {}
 
-	private HashMap<String, ArrayList<KPFSFileInfo>> _mapTbl = new HashMap<String, ArrayList<KPFSFileInfo>>(); 
+	private HashMap<String, Set<KPFSFileInfo>> _mapTbl = new HashMap<String, Set<KPFSFileInfo>>(); 
 	
 	public ArrayList<String> splitFile(String filePath, int chunkSizeB,
 			String directory, String fileName) {
@@ -105,7 +107,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 		ArrayList<String> toDel = new ArrayList<String>();
 		
 		for (String relPath: _mapTbl.keySet()) {
-			ArrayList<KPFSFileInfo> fiArr = _mapTbl.get(relPath);
+			Set<KPFSFileInfo> fiArr = _mapTbl.get(relPath);
 			for (KPFSFileInfo fi: fiArr) {
 				if (fi._sid == sid) {
 					toDel.add(relPath);
@@ -122,7 +124,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 	
 	public void debug() {
 		for (String relPath: _mapTbl.keySet()) {
-			ArrayList<KPFSFileInfo> infos = _mapTbl.get(relPath);
+			Set<KPFSFileInfo> infos = _mapTbl.get(relPath);
 			System.out.print(relPath + ": ");
 			for (KPFSFileInfo info: infos) {
 				System.out.print(info._sid + " ");
@@ -133,22 +135,22 @@ public class KPFSMaster implements KPFSMasterInterface {
 	
 	@Override
 	public synchronized KPFSFileInfo getFileLocation(String relPath) {
-		ArrayList<KPFSFileInfo> ips = (ArrayList<KPFSFileInfo>) _mapTbl.get(relPath);
+		Set<KPFSFileInfo> ips = (Set<KPFSFileInfo>) _mapTbl.get(relPath);
 		if (ips==null || ips.isEmpty()) {
 			return null;
 		}
 		
 		Random rand = new Random();
 		int idx = rand.nextInt(ips.size());	// load balancer entry point
-		KPFSFileInfo kpfsfileinfo = ips.get(idx);
+		KPFSFileInfo kpfsfileinfo = (KPFSFileInfo) ips.toArray()[idx];
 		return kpfsfileinfo;
 	}
 	
 	@Override
 	public synchronized boolean addFileLocation(String relPath, int sid, long size) {
-		ArrayList<KPFSFileInfo> ips = _mapTbl.get(relPath);
+		Set<KPFSFileInfo> ips = _mapTbl.get(relPath);
 		if (ips == null) {
-			ips = new ArrayList<KPFSFileInfo>();
+			ips = new HashSet<KPFSFileInfo>();
 			_mapTbl.put(relPath, ips);
 		}
 		KPFSFileInfo val = new KPFSFileInfo(sid, size);
@@ -158,7 +160,7 @@ public class KPFSMaster implements KPFSMasterInterface {
 	
 	@Override
 	public synchronized void removeFileLocation(String relPath, int sid) {
-		ArrayList<KPFSFileInfo> ips = _mapTbl.get(relPath);
+		Set<KPFSFileInfo> ips = _mapTbl.get(relPath);
 		if (ips == null) {
 			return;
 		}
