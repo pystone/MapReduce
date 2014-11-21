@@ -1,0 +1,45 @@
+
+Project report
+KPFS
+    file system structure (relDir/fileName)
+    system architecture (data master & data node)
+    RMI implementation
+    split & duplicate process
+    file reading interface (KPFile)
+    file read & write process (先从data master获取位置 然后从data node获取内容)
+    failure tolerance (data node fail了 其上的文件会在其他node上再做一个copy)
+
+Map-reduce system
+    system architecture (master & slave)
+    Concurrency in map-reduce slave
+    Failure tolerance 
+
+Requirements we have met
+    ... all of the requirements
+
+Future improvements
+    detailed information of slave status (SlaveTracker)
+    start a task from any host including master and slaves
+    put all the result files into the starting machine
+    more flexibility for task (one config file for one task)
+
+
+
+
+
+
+System administrator documentation
+    how to deploy the system
+    how to run our examples
+
+
+
+
+
+
+
+
+Application programmer documentation
+    how to write your program under our framework
+    how to run the program
+    limitations on your program
