@@ -217,6 +217,7 @@ public class Master implements NetworkFailInterface {
 		
 		currentTask._mrFile = jarFile;
 		
+		System.out.println("Spliting file for task " + taskName + ": " + inputPath);
 		ArrayList<String> files = ((KPFSMaster) _kpfsMaster).splitFile(inputPath,
 					GlobalInfo.sharedInfo().FileChunkSizeB, taskName + "/" + GlobalInfo.sharedInfo().ChunkDirName + "/", taskName);
 		
@@ -246,9 +247,10 @@ public class Master implements NetworkFailInterface {
 			currentTask._mapJobs.put(jobId, job);
 		}
 		
-		
+		System.out.println("Sending jobs of " + taskName + " out to slaves...");
 		currentTask._phase = Task.TaskPhase.MAP;
 		JobManager.sharedJobManager().sendJobs(currentTask._mapJobs.values());
+		System.out.println("Job assignment of " + taskName + " finished.");
 	}
 	
 	/* ============ Handlers for user commands END ============ */
