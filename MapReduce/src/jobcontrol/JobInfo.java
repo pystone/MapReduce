@@ -45,7 +45,9 @@ public class JobInfo implements Serializable {
 		REDUCE_READY,
 		REDUCE_QUEUE,
 		REDUCE,
-		REDUCE_COMPLETE
+		REDUCE_COMPLETE,
+		
+		TERMINATED
 	};
 
 	public int _jobId = 0;

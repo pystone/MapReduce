@@ -25,7 +25,8 @@ public class Message implements Serializable {
 		NEW_JOB,
 		MAP_COMPLETE,
 		REDUCE_COMPLETE,
-		SLAVE_HEARTBEAT
+		SLAVE_HEARTBEAT,
+		TERMINATE_JOB
 	};
 	
 	public MessageType _type;

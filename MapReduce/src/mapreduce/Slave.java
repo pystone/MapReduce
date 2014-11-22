@@ -167,6 +167,18 @@ public class Slave implements NetworkFailInterface {
 		
 	}
 	
+	public void terminateJob(String taskName, Integer jobId) {
+		synchronized (_waitingJob) {
+			for (JobInfo job: _waitingJob) {
+				if (job._jobId == jobId) {
+					job._type = JobInfo.JobType.TERMINATED;
+					System.out.println(taskName + " (" + jobId + ") terminated." );
+					break;
+				}
+			}
+		}
+	}
+	
 	/*
 	 * Report to the master that the status of a job is changed.
 	 */

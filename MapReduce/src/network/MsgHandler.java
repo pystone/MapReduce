@@ -48,6 +48,10 @@ public class MsgHandler extends Thread {
 				case NEW_JOB:
 					Slave.sharedSlave().newJob((JobInfo)msg._content);
 					break;
+				case TERMINATE_JOB:
+					Object[] termInfo = (Object[])msg._content;
+					Slave.sharedSlave().terminateJob((String) termInfo[0], (Integer) termInfo[1]);
+					break;
 					
 				/* slave -> master */
 				case SLAVE_HEARTBEAT:

@@ -96,6 +96,9 @@ public class SlaveWork extends Thread {
 				_job.serialize();
 				e.printStackTrace();
 			}
+		}  else if (_job._type == JobInfo.JobType.TERMINATED) {
+			System.out.println(_job._taskName + "(" + _job._jobId + ") is terminated.");
+			return;
 		} else {
 			System.out.println("WARNING: try to begin a job that is not in queue phase! (" + _job._type + ")");
 			return;

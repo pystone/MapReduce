@@ -20,6 +20,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -27,7 +28,9 @@ import jobcontrol.JobInfo;
 import jobcontrol.JobManager;
 import jobcontrol.Task;
 import network.Listen;
+import network.Message;
 import network.NetworkFailInterface;
+import network.NetworkHelper;
 
 /**
  * Master
@@ -99,6 +102,9 @@ public class Master implements NetworkFailInterface {
             System.exit(-1);
         }
 		
+		/* show the input rules */
+		help();
+		
 		/* read in the user commands and handle them */
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
@@ -120,25 +126,31 @@ public class Master implements NetworkFailInterface {
 		case "new":
 			newTask(cmd[1]);
 			break;
-		case "showslave":
+		case "slavestatus":
 			showSlave();
 			break;
-		case "showalltasks":
+		case "alltasks":
 			showAllTask();
 			break;
 		case "show":
 			showTask(cmd[2]);
 			break;
-		case "debug":
+		case "aliveslaves":
 			for (Integer sid: _slvSocket.keySet()) {
 				System.out.println(sid);
 			}
 			break;
-		case "showallfiles":
+		case "allfiles":
 			((KPFSMaster) _kpfsMaster).debug();
 			break;
+		case "end":
+			terminateTask(cmd[1]);
+			break;
+		default:
+			System.out.println("Invalid input. Please follow the command instructions.");
+			help();
 		}
-			
+		
 	}
 	
 	private void showSlave() {
@@ -153,6 +165,19 @@ public class Master implements NetworkFailInterface {
 		for (String taskName: _tasks.keySet()) {
 			showTask(taskName);
 		}
+		if (_tasks.isEmpty()) {
+			System.out.println("\tNo task is currently running.");
+		}
+	}
+	
+	private void help() {
+		System.out.println("\tnew [taskname]\tStart a new task.");
+		System.out.println("\tslavestatus\tShow the status of all slaves.");
+		System.out.println("\talltasks\tShow the status of all tasks.");
+		System.out.println("\tshow [taskname]\tShow the status of a specific task.");
+		System.out.println("\taliveslaves\tShow the sid of all the living slaves.");
+		System.out.println("\tallfiles\tShow all the files in KPFS.");
+		System.out.println("\tend [taskname]\tTerminate a specific task.");
 	}
 	
 	private void showTask(String taskName) {
@@ -251,6 +276,36 @@ public class Master implements NetworkFailInterface {
 		currentTask._phase = Task.TaskPhase.MAP;
 		JobManager.sharedJobManager().sendJobs(currentTask._mapJobs.values());
 		System.out.println("Job assignment of " + taskName + " finished.");
+	}
+	
+	public void terminateTask(String taskName) {
+		Task task = _tasks.get(taskName);
+		if (task == null) {
+			System.out.println(taskName + " does not exist.");
+			return;
+		}
+		
+		Collection<JobInfo> workingJobs = null;
+		if (task._phase == Task.TaskPhase.MAP) {
+			workingJobs = task._mapJobs.values();
+		} else if (task._phase == Task.TaskPhase.REDUCE) {
+			workingJobs = task._reduceJobs.values();
+		}
+		
+		synchronized (_tasks) {
+			_tasks.remove(taskName);
+		}
+		
+		for (JobInfo job: workingJobs) {
+			Message msg = new Message(job._sid, Message.MessageType.TERMINATE_JOB);
+			msg._content = new Object[]{taskName, job._jobId};
+			try {
+				NetworkHelper.send(_slvSocket.get(job._sid), msg);
+			} catch (IOException e) {
+				networkFail(job._sid);
+			}
+		}
+		System.out.println(taskName + " is terminated.");
 	}
 	
 	/* ============ Handlers for user commands END ============ */
