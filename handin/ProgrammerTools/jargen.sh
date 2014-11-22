@@ -6,6 +6,9 @@ TMPJAR=jar/
 PACK=mapreduce/
 JAR=./JarFiles/
 
+if [ -d "$TMPDIR" ]; then
+  rm -rf $TMPDIR
+fi
 
 mkdir -p $TMPDIR
 cp ../MapReduce/mapreduce/MRBase.java $TMPDIR
@@ -24,11 +27,16 @@ do
   base=${filename%.*}
 
   javac -cp \* $TMPDIR*.java
-  cp $TMPDIR*.class $TMPDIR$TMPJAR
+  cp $TMPDIR$base.class $TMPDIR$TMPJAR
 
-  jar -cvf $JAR$base.jar $TMPDIR$TMPJAR
+  cd $TMPDIR$TMPJAR
+  jar -cvf ../../$JAR$base.jar .
+  cd ../../
   
+  echo "Removing $TMPDIR$filename"
   rm -rf $TMPDIR$filename
+  echo "Removing $TMPDIR$TMPJAR$base.class"
+  rm -rf "$TMPDIR$TMPJAR$base.class"
 done
 
 rm -rf tmp

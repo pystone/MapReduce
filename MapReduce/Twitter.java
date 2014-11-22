@@ -9,7 +9,7 @@ import org.json.JSONObject;
 import mapreduce.MRBase;
 import mapreduce.PairContainer;
 
-public class TwitterExtractor implements MRBase {
+public class Twitter implements MRBase {
     @Override
     public void map(String key, String value, PairContainer output) {
         Scanner scan = new Scanner(value);
