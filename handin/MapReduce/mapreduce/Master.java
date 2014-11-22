@@ -465,6 +465,10 @@ public class Master implements NetworkFailInterface {
 		
 		
 		for (Task task: _tasks.values()) {
+			if (task._phase == Task.TaskPhase.NONE || task._phase == Task.TaskPhase.FINISH) {
+				continue;
+			}
+			
 			task.reset();
 			for (JobInfo job: task._mapJobs.values()) {
 				job._sid = getFreeSlave();
@@ -491,12 +495,17 @@ public class Master implements NetworkFailInterface {
 		}
 		
 		System.out.println("Rescheduling...");
+		boolean scheduled = false;
 		for (Task task: _tasks.values()) {
 			if (task._phase != Task.TaskPhase.NONE && task._phase != Task.TaskPhase.FINISH) {
 				System.out.println("Task " + task._taskName + " is rescheduled.");
 				JobManager.sharedJobManager().sendJobs(task._mapJobs.values());
+				scheduled = true;
 			}
-			
+		}
+		if (scheduled == false) {
+			System.out.println("All tasks are finished. No need to redo the work. If you have files stored "
+					+ "on slave " + sid + ", please use 'new' command to start that task again!");
 		}
 	}
 }
